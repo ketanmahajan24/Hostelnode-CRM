@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Login Activity — HostelNode CRM{% endblock %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="font-semibold text-lg">Login &amp; Signup Activity</h2>
+      <p class="text-xs text-gray-500 mt-1">
+        Every login, failed attempt, and logout on this CRM — with exact time, IP, and best-effort location.
+      </p>
+    </div>
+    <span class="text-xs text-gray-500">{{ total }} total events</span>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="border-b border-panel3/60 bg-panel2/60">
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Time</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Event</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Email</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">IP Address</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Location</th>
+            <th class="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Device</th>
+          </tr>
+        </thead>
+        <tbody id="login-history-body">
+          {% include "security/login_history_rows.html" %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="text-xs text-gray-600">
+    Location is derived from IP address, not GPS — expect it to be accurate to city/region level, occasionally off if
+    a VPN, mobile carrier, or corporate proxy is involved.
+  </p>
+</div>
+{% endblock %}

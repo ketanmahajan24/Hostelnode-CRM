@@ -13,15 +13,17 @@ import httpx
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.database import init_indexes
 from app.middlewares.logging import LoggingMiddleware
+from app.middlewares.auth import AuthMiddleware
 from app.utils.helpers import register_filters
 from app.config import settings
 
 from app.routers import dashboard, contacts, campaigns, analytics
 from app.routers import conversations as conversations_router
-from app.routers import templates_router, settings_router
+from app.routers import templates_router, settings_router, auth as auth_router, security as security_router
 from app.webhook import whatsapp_webhook
 from app.websocket import ws_router
 
@@ -52,7 +54,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="HostelNode CRM", lifespan=lifespan)
+
+# Middleware order matters: Starlette runs the LAST-added middleware FIRST.
+# We need the session cookie decoded before AuthMiddleware checks it, so
+# SessionMiddleware is added last (outermost).
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(AuthMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.app_secret_key,
+    session_cookie=settings.session_cookie_name,
+    max_age=settings.session_max_age_seconds,
+    https_only=False,  # set True once you're serving over HTTPS in production
+)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -62,6 +76,7 @@ templates = Jinja2Templates(directory="templates")
 register_filters(templates.env)
 
 # Routers
+app.include_router(auth_router.router)
 app.include_router(dashboard.router)
 app.include_router(conversations_router.router)
 app.include_router(contacts.router)
@@ -69,5 +84,6 @@ app.include_router(templates_router.router)
 app.include_router(campaigns.router)
 app.include_router(analytics.router)
 app.include_router(settings_router.router)
+app.include_router(security_router.router)
 app.include_router(whatsapp_webhook.router)
 app.include_router(ws_router.router)

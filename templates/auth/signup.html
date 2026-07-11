@@ -1,0 +1,45 @@
+{% extends "auth/layout.html" %}
+{% block title %}Create admin account — HostelNode CRM{% endblock %}
+{% block content %}
+<p class="text-xs text-gray-500 mb-4">
+  This creates the one admin account for this CRM. Signup locks itself after this.
+</p>
+<form method="post" action="/signup" class="space-y-4">
+  <div>
+    <label class="block text-xs text-gray-400 mb-1">Name</label>
+    <input type="text" name="name" required autofocus value="{{ name or '' }}"
+           class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+           placeholder="Your name">
+  </div>
+
+  <div>
+    <label class="block text-xs text-gray-400 mb-1">Email</label>
+    <input type="email" name="email" required value="{{ email or '' }}"
+           class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+           placeholder="you@hostelnode.com">
+  </div>
+
+  <div>
+    <label class="block text-xs text-gray-400 mb-1">Password</label>
+    <input type="password" name="password" required minlength="8"
+           class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+           placeholder="At least 8 characters">
+  </div>
+
+  <div>
+    <label class="block text-xs text-gray-400 mb-1">Confirm password</label>
+    <input type="password" name="confirm_password" required minlength="8"
+           class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+           placeholder="Re-enter password">
+  </div>
+
+  <button type="submit"
+          class="w-full bg-accent hover:bg-accent2 transition-colors py-2.5 rounded-lg text-sm font-semibold">
+    Create account
+  </button>
+</form>
+
+<p class="text-center text-xs text-gray-500 mt-5">
+  Already have an account? <a href="/login" class="text-accent hover:underline">Log in</a>
+</p>
+{% endblock %}

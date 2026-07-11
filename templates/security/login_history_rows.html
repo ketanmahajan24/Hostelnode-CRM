@@ -1,0 +1,58 @@
+{% for e in events %}
+<tr class="border-b border-panel3/40 hover:bg-panel3/20 transition-colors">
+  <td class="px-4 py-3 text-sm text-gray-300 whitespace-nowrap font-mono">
+    {{ e.created_at | fmt_datetime_full }}
+  </td>
+  <td class="px-4 py-3">
+    {% if e.event_type == "login" %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent2"></span> Login
+      </span>
+    {% elif e.event_type == "signup" %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/15 text-blue-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Signup
+      </span>
+    {% elif e.event_type == "login_failed" %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/15 text-red-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Failed login
+      </span>
+    {% elif e.event_type == "logout" %}
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/15 text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Logout
+      </span>
+    {% else %}
+      <span class="text-xs text-gray-500">{{ e.event_type }}</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-3 text-sm text-gray-300">{{ e.email or "—" }}</td>
+  <td class="px-4 py-3 text-sm text-gray-400 font-mono">{{ e.ip or "—" }}</td>
+  <td class="px-4 py-3 text-sm text-gray-400">
+    {% if e.location_note %}
+      <span class="text-gray-500 italic">{{ e.location_note }}</span>
+    {% elif e.location_city or e.location_country %}
+      {{ [e.location_city, e.location_region, e.location_country] | select | join(", ") }}
+    {% else %}
+      <span class="text-gray-600">Unknown</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-3 text-sm text-gray-400">{{ e.user_agent | short_ua }}</td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="6" class="text-center text-sm text-gray-500 py-8">No activity recorded yet.</td>
+</tr>
+{% endfor %}
+
+{% if events and next_skip < total %}
+<tr id="load-more-row">
+  <td colspan="6" class="text-center py-3">
+    <button
+      hx-get="/security/login-history/rows?skip={{ next_skip }}"
+      hx-target="#load-more-row"
+      hx-swap="outerHTML"
+      class="text-sm text-accent hover:underline">
+      Load more ({{ total - next_skip }} remaining)
+    </button>
+  </td>
+</tr>
+{% endif %}

@@ -16,6 +16,8 @@ campaigns_col = db["campaigns"]
 notes_col = db["notes"]
 tags_col = db["tags"]
 media_col = db["media"]
+users_col = db["users"]
+auth_events_col = db["auth_events"]
 
 
 async def init_indexes():
@@ -38,3 +40,9 @@ async def init_indexes():
     await templates_col.create_index("name")
     await campaigns_col.create_index("created_at")
     await tags_col.create_index("name", unique=True)
+
+    await users_col.create_index("email", unique=True)
+
+    await auth_events_col.create_index("created_at")
+    await auth_events_col.create_index("user_id")
+    await auth_events_col.create_index("event_type")

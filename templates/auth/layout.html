@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}HostelNode CRM{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="/static/images/hostelnode-logo-cutout.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          panel: '#111b21',
+          panel2: '#202c33',
+          panel3: '#2a3942',
+          accent: '#00a884',
+          accent2: '#25d366',
+          bg: '#0b141a',
+        },
+        boxShadow: { glow: '0 0 25px rgba(0,168,132,0.25)' },
+      },
+    },
+  }
+</script>
+<style>
+  .fade-in { animation: fadeIn .3s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+  .glass { background: rgba(32, 44, 51, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+</style>
+</head>
+<body class="bg-bg text-gray-100 antialiased min-h-screen flex items-center justify-center font-[Segoe_UI,Helvetica,Arial,sans-serif] p-4">
+
+<div class="w-full max-w-sm fade-in">
+  <div class="text-center mb-6">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-bold text-xl mb-3">HN</div>
+    <h1 class="text-lg font-semibold">HostelNode CRM</h1>
+    <p class="text-xs text-gray-500">WhatsApp Business Suite</p>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 p-6 shadow-glow">
+    {% if error %}
+    <div class="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+      {{ error }}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+</body>
+</html>
