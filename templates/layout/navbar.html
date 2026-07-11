@@ -1,0 +1,25 @@
+<header class="h-16 border-b border-panel3/60 bg-panel/80 backdrop-blur flex items-center justify-between px-5 shrink-0">
+  <div>
+    <h1 class="text-base font-semibold capitalize">{{ page or "Dashboard" }}</h1>
+    <p class="text-xs text-gray-500">HostelNode WhatsApp Business Suite</p>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button class="relative p-2 rounded-xl hover:bg-panel3/60 transition-colors" title="Notifications">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5 text-gray-300">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500"></span>
+    </button>
+
+    <div class="flex items-center gap-2 pl-3 border-l border-panel3/60">
+      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-semibold text-sm">
+        HN
+      </div>
+      <div class="hidden sm:block">
+        <p class="text-sm font-medium leading-tight">Support Agent</p>
+        <p class="text-xs text-gray-500 leading-tight">hostelnode.com</p>
+      </div>
+    </div>
+  </div>
+</header>

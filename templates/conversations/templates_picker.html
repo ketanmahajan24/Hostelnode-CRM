@@ -1,0 +1,14 @@
+{% for t in wa_templates %}
+<form hx-post="/conversations/{{ active_wa_id }}/send-template" hx-target="#chat-window-inner" hx-swap="outerHTML"
+      class="flex items-center justify-between gap-2 px-2 py-2 rounded-lg hover:bg-panel3/50">
+  <input type="hidden" name="template_name" value="{{ t.name }}">
+  <input type="hidden" name="language" value="{{ t.language }}">
+  <div class="min-w-0">
+    <p class="text-sm font-medium truncate">{{ t.name }}</p>
+    <p class="text-xs text-gray-500 truncate max-w-[220px]">{{ t.body_text }}</p>
+  </div>
+  <button type="submit" class="shrink-0 text-xs bg-accent/20 text-accent px-2.5 py-1 rounded-full hover:bg-accent/30">Send</button>
+</form>
+{% else %}
+<p class="text-xs text-gray-500 px-1 py-2">No approved templates synced yet. Go to Templates → Sync from Meta.</p>
+{% endfor %}

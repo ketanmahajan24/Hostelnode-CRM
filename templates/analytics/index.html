@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-6">
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {% for label, value, color in [
+      ("Sent Today", today_sent, "text-accent"),
+      ("Received Today", today_received, "text-purple-400"),
+      ("Unread", total_unread, "text-amber-400"),
+      ("Active Users (24h)", active_users, "text-sky-400"),
+    ] %}
+    <div class="glass rounded-2xl p-5 border border-panel3/60">
+      <p class="text-3xl font-bold {{ color }}">{{ value }}</p>
+      <p class="text-sm text-gray-400 mt-1">{{ label }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 p-5">
+    <h2 class="font-semibold mb-4">Last 7 Days</h2>
+    <div class="flex items-end gap-3 h-48">
+      {% set max_val = (days | map(attribute='sent') | list + days | map(attribute='received') | list) | max %}
+      {% for d in days %}
+      <div class="flex-1 flex flex-col items-center gap-1">
+        <div class="w-full flex items-end justify-center gap-1 h-36">
+          <div class="w-1/2 bg-gradient-to-t from-accent to-emerald-400 rounded-t-md transition-all"
+               style="height: {{ (d.sent / max_val * 100) if max_val else 0 }}%" title="Sent: {{ d.sent }}"></div>
+          <div class="w-1/2 bg-gradient-to-t from-purple-600 to-fuchsia-400 rounded-t-md transition-all"
+               style="height: {{ (d.received / max_val * 100) if max_val else 0 }}%" title="Received: {{ d.received }}"></div>
+        </div>
+        <p class="text-[10px] text-gray-500">{{ d.date }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="flex gap-4 mt-4 text-xs text-gray-400">
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-accent"></span> Sent</span>
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-purple-500"></span> Received</span>
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <div class="px-5 py-4 border-b border-panel3/60">
+      <h2 class="font-semibold">Most Active Contacts</h2>
+    </div>
+    <div class="divide-y divide-panel3/40">
+      {% for m in most_active %}
+      <a href="/conversations/{{ m.wa_id }}" class="flex items-center justify-between px-5 py-3 hover:bg-panel3/30 transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-xs font-semibold">
+            {{ m.name[0]|upper }}
+          </div>
+          <span class="text-sm font-medium">{{ m.name }}</span>
+        </div>
+        <span class="text-sm text-gray-400">{{ m.count }} messages</span>
+      </a>
+      {% else %}
+      <p class="px-5 py-8 text-center text-gray-500 text-sm">No message activity yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+<table class="w-full text-sm">
+  <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+    <tr>
+      <th class="text-left px-5 py-3">Name</th>
+      <th class="text-left px-5 py-3">Phone</th>
+      <th class="text-left px-5 py-3">City</th>
+      <th class="text-left px-5 py-3">Status</th>
+      <th class="text-left px-5 py-3">Tags</th>
+      <th class="text-right px-5 py-3">Chat</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-panel3/40">
+    {% for c in contacts %}
+    <tr class="hover:bg-panel3/20 transition-colors">
+      <td class="px-5 py-3 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-xs font-semibold shrink-0">
+          {{ (c.name or "?")[0]|upper }}
+        </div>
+        <span class="font-medium">{{ c.name }}</span>
+        {% if c.is_blocked %}<span class="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">Blocked</span>{% endif %}
+      </td>
+      <td class="px-5 py-3 text-gray-400">+{{ c.wa_id }}</td>
+      <td class="px-5 py-3 text-gray-400">{{ c.city or "—" }}</td>
+      <td class="px-5 py-3">
+        <span class="text-xs bg-panel3/60 px-2 py-1 rounded-full">{{ c.lead_status }}</span>
+      </td>
+      <td class="px-5 py-3">
+        <div class="flex flex-wrap gap-1">
+          {% for t in c.tags %}
+          <span class="text-[10px] bg-accent/15 text-accent px-1.5 py-0.5 rounded-full">{{ t }}</span>
+          {% endfor %}
+        </div>
+      </td>
+      <td class="px-5 py-3 text-right">
+        <a href="/conversations/{{ c.wa_id }}" class="text-accent text-xs hover:underline">Open chat →</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="text-center py-10 text-gray-500">No contacts found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

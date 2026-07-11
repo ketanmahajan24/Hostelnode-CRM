@@ -1,0 +1,34 @@
+{% if error %}
+<div class="p-4 bg-red-500/10 text-red-400 text-sm">Sync failed: {{ error }}</div>
+{% endif %}
+<table class="w-full text-sm">
+  <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+    <tr>
+      <th class="text-left px-5 py-3">Name</th>
+      <th class="text-left px-5 py-3">Language</th>
+      <th class="text-left px-5 py-3">Category</th>
+      <th class="text-left px-5 py-3">Status</th>
+      <th class="text-left px-5 py-3">Preview</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-panel3/40">
+    {% for t in wa_templates %}
+    <tr class="hover:bg-panel3/20 transition-colors">
+      <td class="px-5 py-3 font-medium">{{ t.name }}</td>
+      <td class="px-5 py-3 text-gray-400">{{ t.language }}</td>
+      <td class="px-5 py-3 text-gray-400">{{ t.category }}</td>
+      <td class="px-5 py-3">
+        <span class="text-xs px-2 py-1 rounded-full
+              {% if t.status == 'APPROVED' %}bg-emerald-500/15 text-emerald-400
+              {% elif t.status == 'PENDING' %}bg-amber-500/15 text-amber-400
+              {% else %}bg-red-500/15 text-red-400{% endif %}">
+          {{ t.status }}
+        </span>
+      </td>
+      <td class="px-5 py-3 text-gray-400 max-w-sm truncate">{{ t.body_text }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-center py-10 text-gray-500">No templates synced yet. Click "Sync from Meta" above.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

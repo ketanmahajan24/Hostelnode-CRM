@@ -1,0 +1,110 @@
+<div class="flex flex-col h-full w-full overflow-y-auto" x-data="{ tab: 'details' }">
+  <div class="flex flex-col items-center gap-2 p-6 border-b border-panel3/60">
+    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-2xl font-semibold">
+      {{ (contact.name or "?")[0]|upper }}
+    </div>
+    <p class="font-semibold text-lg text-center">{{ contact.name }}</p>
+    <p class="text-sm text-gray-500">+{{ contact.wa_id }}</p>
+
+    <div class="flex gap-2 mt-2">
+      <a href="tel:{{ contact.wa_id }}" class="p-2.5 rounded-full bg-panel3/60 hover:bg-panel3 transition-colors" title="Call">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+      </a>
+      <button hx-post="/contacts/{{ contact.wa_id }}/block" hx-swap="none"
+              class="p-2.5 rounded-full bg-panel3/60 hover:bg-red-500/20 hover:text-red-400 transition-colors" title="Block">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+        </svg>
+      </button>
+      <button hx-post="/conversations/{{ contact.wa_id }}/archive" hx-swap="none"
+              class="p-2.5 rounded-full bg-panel3/60 hover:bg-panel3 transition-colors" title="Archive">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v1a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Editable details -->
+  <form hx-post="/contacts/{{ contact.wa_id }}/update" hx-swap="none" hx-trigger="change"
+        class="p-5 border-b border-panel3/60 space-y-3">
+    <div>
+      <label class="text-xs text-gray-500">Name</label>
+      <input type="text" name="name" value="{{ contact.name }}"
+             class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+    </div>
+    <div>
+      <label class="text-xs text-gray-500">City</label>
+      <input type="text" name="city" value="{{ contact.city or '' }}"
+             class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+    </div>
+    <div>
+      <label class="text-xs text-gray-500">Lead Status</label>
+      <select name="lead_status" class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+        {% for s in ["New", "Contacted", "Qualified", "Customer", "Lost"] %}
+        <option value="{{ s }}" {% if contact.lead_status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <!-- Tags -->
+  <div class="p-5 border-b border-panel3/60">
+    <p class="text-xs text-gray-500 mb-2">Tags</p>
+    <div class="flex flex-wrap gap-2">
+      {% for tag in contact.tags %}
+      <span class="flex items-center gap-1 bg-accent/15 text-accent text-xs px-2.5 py-1 rounded-full">
+        {{ tag }}
+        <button hx-post="/contacts/{{ contact.wa_id }}/untag" hx-vals='{"tag": "{{ tag }}"}' hx-swap="none" hx-target="closest span"
+                hx-on::after-request="this.closest('span').remove()" class="hover:text-red-400">✕</button>
+      </span>
+      {% endfor %}
+    </div>
+    <form hx-post="/contacts/{{ contact.wa_id }}/tag" hx-swap="none" class="flex gap-2 mt-3">
+      <select name="tag" class="flex-1 bg-panel3/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+        {% for t in ["Students","Owners","Influencers","Leads","Customers"] %}
+        <option value="{{ t }}">{{ t }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="text-xs bg-panel3/60 hover:bg-panel3 px-3 rounded-lg">Add</button>
+    </form>
+  </div>
+
+  <!-- Notes -->
+  <div class="p-5 border-b border-panel3/60">
+    <p class="text-xs text-gray-500 mb-2">Notes</p>
+    <div class="space-y-2 max-h-32 overflow-y-auto mb-2">
+      {% for note in contact.notes %}
+      <div class="bg-panel3/40 rounded-lg px-3 py-2 text-xs text-gray-300">{{ note.text }}</div>
+      {% else %}
+      <p class="text-xs text-gray-600">No notes yet.</p>
+      {% endfor %}
+    </div>
+    <form hx-post="/contacts/{{ contact.wa_id }}/note" hx-swap="none" hx-on::after-request="this.reset()" class="flex gap-2">
+      <input type="text" name="text" placeholder="Add a note…" required
+             class="flex-1 bg-panel3/50 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+      <button type="submit" class="text-xs bg-panel3/60 hover:bg-panel3 px-3 rounded-lg">Save</button>
+    </form>
+  </div>
+
+  <!-- Stats -->
+  <div class="p-5">
+    <p class="text-xs text-gray-500 mb-3">Conversation Statistics</p>
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div class="bg-panel3/40 rounded-xl py-3">
+        <p class="text-lg font-semibold">{{ stats.total }}</p>
+        <p class="text-[10px] text-gray-500">Total</p>
+      </div>
+      <div class="bg-panel3/40 rounded-xl py-3">
+        <p class="text-lg font-semibold">{{ stats.inbound }}</p>
+        <p class="text-[10px] text-gray-500">Received</p>
+      </div>
+      <div class="bg-panel3/40 rounded-xl py-3">
+        <p class="text-lg font-semibold">{{ stats.outbound }}</p>
+        <p class="text-[10px] text-gray-500">Sent</p>
+      </div>
+    </div>
+  </div>
+</div>

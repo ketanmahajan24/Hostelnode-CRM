@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="font-semibold text-lg">Approved Meta Templates</h2>
+      <p class="text-sm text-gray-500">Sync pulls the latest approved templates from your WhatsApp Business Account.</p>
+    </div>
+    <button hx-post="/templates/sync" hx-target="#templates-table" hx-indicator="#sync-spinner"
+            class="flex items-center gap-2 bg-accent hover:bg-accent2 transition-colors px-4 py-2 rounded-xl text-sm font-medium">
+      <svg id="sync-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           class="w-4 h-4 htmx-indicator animate-spin">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Sync from Meta
+    </button>
+  </div>
+
+  <div id="templates-table" class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    {% include "templates_page/table.html" %}
+  </div>
+</div>
+{% endblock %}

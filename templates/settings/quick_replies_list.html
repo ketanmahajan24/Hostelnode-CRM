@@ -1,0 +1,12 @@
+{% for q in quick_replies %}
+<div class="flex items-center justify-between gap-3 bg-panel3/40 rounded-lg px-3 py-2">
+  <div class="min-w-0">
+    <p class="text-xs font-mono text-accent">{{ q.shortcut }}</p>
+    <p class="text-sm text-gray-300 truncate">{{ q.text }}</p>
+  </div>
+  <button hx-post="/settings/quick-replies/{{ q._id }}/delete" hx-target="#quick-replies-list"
+          class="text-gray-500 hover:text-red-400 shrink-0">✕</button>
+</div>
+{% else %}
+<p class="text-sm text-gray-500 text-center py-4">No quick replies yet.</p>
+{% endfor %}

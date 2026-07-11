@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-6 max-w-3xl">
+
+  <div class="glass rounded-2xl border border-panel3/60 p-5">
+    <h2 class="font-semibold mb-3">WhatsApp Business Account</h2>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="w-2.5 h-2.5 rounded-full bg-accent2 animate-pulse"></span>
+      <span class="text-gray-300">Phone Number ID:</span>
+      <span class="text-gray-500 font-mono">{{ wa_phone_id }}</span>
+    </div>
+    <p class="text-xs text-gray-500 mt-2">
+      Manage tokens and webhook verification in your <code>.env</code> file. Never commit real credentials to version control.
+    </p>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 p-5">
+    <h2 class="font-semibold mb-1">Quick Replies</h2>
+    <p class="text-xs text-gray-500 mb-4">Saved shortcuts your agents can insert instantly while chatting.</p>
+
+    <form hx-post="/settings/quick-replies/add" hx-target="#quick-replies-list" hx-on::after-request="this.reset()"
+          class="flex flex-col sm:flex-row gap-2 mb-4">
+      <input type="text" name="shortcut" placeholder="/shortcut" required
+             class="sm:w-40 bg-panel3/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      <input type="text" name="text" placeholder="Full reply text" required
+             class="flex-1 bg-panel3/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      <button type="submit" class="bg-accent hover:bg-accent2 transition-colors px-4 py-2 rounded-lg text-sm font-medium">Add</button>
+    </form>
+
+    <div id="quick-replies-list" class="space-y-2">
+      {% include "settings/quick_replies_list.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}

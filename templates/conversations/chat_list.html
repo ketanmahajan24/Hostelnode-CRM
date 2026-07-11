@@ -1,0 +1,38 @@
+{% for item in chats %}
+<a href="/conversations/{{ item.contact.wa_id }}"
+   class="flex items-center gap-3 px-4 py-3 border-b border-panel3/30 hover:bg-panel3/40 transition-colors cursor-pointer
+          {% if active_wa_id == item.contact.wa_id %}bg-panel3/50{% endif %}">
+  <div class="relative shrink-0">
+    <div class="w-11 h-11 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center font-semibold">
+      {{ (item.contact.name or "?")[0]|upper }}
+    </div>
+    {% if item.conversation.is_pinned %}
+    <span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-panel3 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5 text-accent">
+        <path d="M16 3l5 5-1.5 1.5L18 8l-4 4v5l-2 2-2-2 1-4-4-4-3 1 7-7 1-1 4 1z"/>
+      </svg>
+    </span>
+    {% endif %}
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center justify-between gap-2">
+      <p class="font-medium truncate text-sm">{{ item.contact.name }}</p>
+      <span class="text-xs text-gray-500 shrink-0">{{ item.conversation.last_message_at | fmt_time }}</span>
+    </div>
+    <div class="flex items-center justify-between gap-2 mt-0.5">
+      <p class="text-xs text-gray-500 truncate">{{ item.conversation.last_message_text or "No messages yet" }}</p>
+      {% if item.conversation.unread_count %}
+      <span class="bg-accent text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center shrink-0">
+        {{ item.conversation.unread_count }}
+      </span>
+      {% elif item.conversation.is_starred %}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-amber-400 shrink-0">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+      </svg>
+      {% endif %}
+    </div>
+  </div>
+</a>
+{% else %}
+<div class="p-8 text-center text-gray-500 text-sm">No conversations found.</div>
+{% endfor %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-6">
+
+  <div class="glass rounded-2xl border border-panel3/60 p-5">
+    <h2 class="font-semibold mb-4">New Broadcast Campaign</h2>
+    <form hx-post="/campaigns/broadcast" hx-target="#campaigns-table" hx-indicator="#broadcast-spinner"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+      <div>
+        <label class="text-xs text-gray-500">Campaign Name</label>
+        <input type="text" name="name" required placeholder="e.g. Diwali Offer"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Template</label>
+        <select name="template_name" required class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+          {% for t in wa_templates %}
+          <option value="{{ t.name }}" data-lang="{{ t.language }}">{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Target Tag</label>
+        <select name="target_tag" class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+          <option value="">All Contacts</option>
+          {% for t in ["Students","Owners","Influencers","Leads","Customers"] %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="flex items-center justify-center gap-2 bg-accent hover:bg-accent2 transition-colors px-4 py-2 rounded-xl text-sm font-medium h-fit">
+        <svg id="broadcast-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             class="w-4 h-4 htmx-indicator animate-spin">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Launch Broadcast
+      </button>
+    </form>
+    <p class="text-xs text-gray-500 mt-3">Only approved Meta templates can be broadcast — text-only messages cannot be sent in bulk per WhatsApp policy.</p>
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Campaign History</h2>
+    <div id="campaigns-table" class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+      {% include "campaigns/table.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
