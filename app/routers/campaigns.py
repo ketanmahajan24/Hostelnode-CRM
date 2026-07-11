@@ -7,9 +7,13 @@ from typing import Optional, List
 from app.database import campaigns_col, templates_col, contacts_col
 from app.services import whatsapp_service, message_service
 from app.services.whatsapp_service import WhatsAppAPIError
+from app.utils.helpers import register_filters   #
+
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+register_filters(templates.env)  
 
 
 @router.get("/campaigns", response_class=HTMLResponse)
