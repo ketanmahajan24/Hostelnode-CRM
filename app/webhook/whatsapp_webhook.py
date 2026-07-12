@@ -111,6 +111,15 @@ async def _handle_incoming_messages(value: dict):
         saved_msg = await message_service.save_message(doc)
         await message_service.upsert_conversation_on_inbound(wa_id, preview, msg_type, ts)
 
+        # Auto-advance the lead's status based on this reply. Button/interactive
+        # replies map to an exact status; plain text just flips New/Message Sent
+        # to Replied (never regresses a lead further along the pipeline).
+        is_button_reply = msg_type in ("interactive", "button")
+        try:
+            await contact_service.auto_advance_on_reply(wa_id, doc.get("text"), is_button_reply)
+        except Exception as exc:
+            print(f"[webhook] failed to auto-advance lead status: {exc}")
+
         await manager.broadcast("new_message", {
             "message": saved_msg,
             "contact": {"wa_id": wa_id, "name": contact.get("name", wa_id)},

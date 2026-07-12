@@ -43,7 +43,7 @@
     <div>
       <label class="text-xs text-gray-500">Lead Status</label>
       <select name="lead_status" class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
-        {% for s in ["New", "Contacted", "Qualified", "Customer", "Lost"] %}
+        {% for s in ["New", "Message Sent", "Replied", "Interested", "Wants Details", "Signed Up", "Listed", "Onboarded", "Lost"] %}
         <option value="{{ s }}" {% if contact.lead_status == s %}selected{% endif %}>{{ s }}</option>
         {% endfor %}
       </select>

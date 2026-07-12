@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6">
+  <div class="max-w-md mx-auto space-y-4">
+    <div>
+      <h2 class="font-semibold text-lg">Import leads</h2>
+      <p class="text-xs text-gray-500 mt-1">
+        Upload a .xlsx or .csv file. Columns are auto-detected by header name —
+        Name, Phone/No/Mobile, PG Name, Location/City, Email (any capitalization,
+        spacing works). Duplicate phone numbers are skipped automatically.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    <div class="glass rounded-2xl border border-panel3/60 p-6 space-y-2">
+      <p class="text-sm"><span class="text-accent font-semibold">{{ result.created }}</span> leads imported.</p>
+      <p class="text-sm text-gray-400">{{ result.skipped }} skipped (duplicate phone or missing phone).</p>
+      <p class="text-xs text-gray-500">{{ result.total }} rows read from file.</p>
+      <a href="/contacts" class="inline-block mt-2 text-accent text-sm hover:underline">View leads →</a>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/contacts/import" enctype="multipart/form-data"
+          class="glass rounded-2xl border border-panel3/60 p-6 space-y-4">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">File</label>
+        <input type="file" name="file" accept=".xlsx,.xlsm,.csv" required
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-accent file:text-white file:text-xs">
+      </div>
+      <button type="submit" class="w-full bg-accent hover:bg-accent2 transition-colors py-2.5 rounded-lg text-sm font-semibold">
+        Upload &amp; import
+      </button>
+    </form>
+
+    <a href="/contacts" class="block text-center text-xs text-gray-500 hover:text-gray-300">← Back to leads</a>
+  </div>
+</div>
+{% endblock %}

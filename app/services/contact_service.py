@@ -1,6 +1,39 @@
+import re
 from datetime import datetime, timezone
 from typing import Optional, List
-from app.database import contacts_col
+from app.database import contacts_col, status_history_col
+
+# Statuses considered "not yet replied" — an inbound plain-text message from
+# these states auto-advances to Replied. Anything further along the pipeline
+# is left alone so a later message doesn't regress real progress.
+PRE_REPLY_STATUSES = {"New", "Message Sent"}
+
+# Map a WhatsApp interactive button-reply title (case-insensitive, exact match)
+# straight to a lead status. Edit this to match your actual template button
+# text — button replies are a clean, structured signal, unlike free text.
+BUTTON_REPLY_STATUS_MAP = {
+    "yes, interested": "Interested",
+    "interested": "Interested",
+    "not interested": "Lost",
+    "not now": "Lost",
+}
+
+
+def normalize_phone(raw: str) -> str:
+    """Strip spaces/dashes/parens/plus so numbers dedupe consistently as wa_id."""
+    return re.sub(r"[^\d]", "", str(raw or "").strip())
+
+
+async def log_status_change(wa_id: str, from_status: Optional[str], to_status: str, triggered_by: str):
+    if from_status == to_status:
+        return
+    await status_history_col.insert_one({
+        "wa_id": wa_id,
+        "from_status": from_status,
+        "to_status": to_status,
+        "triggered_by": triggered_by,   # a user_id, "webhook", or "rule_engine"
+        "created_at": datetime.now(timezone.utc),
+    })
 
 
 async def get_or_create_contact(wa_id: str, name: Optional[str] = None) -> dict:
@@ -12,7 +45,16 @@ async def get_or_create_contact(wa_id: str, name: Optional[str] = None) -> dict:
         "name": name or wa_id,
         "profile_photo": None,
         "city": None,
+        "location": None,
+        "pg_name": None,
+        "email": None,
+        "source": None,
         "lead_status": "New",
+        "priority_score": 0,
+        "next_follow_up_at": None,
+        "last_message_sent_at": None,
+        "last_reply_at": None,
+        "assigned_template": None,
         "tags": [],
         "is_blocked": False,
         "notes": [],
@@ -21,6 +63,7 @@ async def get_or_create_contact(wa_id: str, name: Optional[str] = None) -> dict:
     }
     result = await contacts_col.insert_one(new_contact)
     new_contact["_id"] = result.inserted_id
+    await log_status_change(wa_id, None, "New", triggered_by="import")
     return new_contact
 
 
@@ -28,8 +71,12 @@ async def touch_last_active(wa_id: str):
     await contacts_col.update_one({"wa_id": wa_id}, {"$set": {"last_active": datetime.now(timezone.utc)}})
 
 
-async def update_contact(wa_id: str, updates: dict) -> Optional[dict]:
+async def update_contact(wa_id: str, updates: dict, triggered_by: str = "user") -> Optional[dict]:
     updates = {k: v for k, v in updates.items() if v is not None}
+    if "lead_status" in updates:
+        existing = await contacts_col.find_one({"wa_id": wa_id})
+        old_status = (existing or {}).get("lead_status")
+        await log_status_change(wa_id, old_status, updates["lead_status"], triggered_by=triggered_by)
     if updates:
         await contacts_col.update_one({"wa_id": wa_id}, {"$set": updates})
     return await contacts_col.find_one({"wa_id": wa_id})
@@ -50,15 +97,21 @@ async def remove_tag(wa_id: str, tag: str):
     await contacts_col.update_one({"wa_id": wa_id}, {"$pull": {"tags": tag}})
 
 
-async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None) -> List[dict]:
+async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None,
+                         status: Optional[str] = None, city: Optional[str] = None) -> List[dict]:
     query: dict = {}
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"wa_id": {"$regex": search}},
+            {"pg_name": {"$regex": search, "$options": "i"}},
         ]
     if tag:
         query["tags"] = tag
+    if status:
+        query["lead_status"] = status
+    if city:
+        query["city"] = city
     cursor = contacts_col.find(query).sort("name", 1)
     docs = [d async for d in cursor]
     for d in docs:
@@ -68,3 +121,70 @@ async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None)
 
 async def block_contact(wa_id: str, blocked: bool = True):
     await contacts_col.update_one({"wa_id": wa_id}, {"$set": {"is_blocked": blocked}})
+
+
+async def auto_advance_on_reply(wa_id: str, reply_text: Optional[str], is_button_reply: bool):
+    """
+    Called from the WhatsApp webhook whenever an inbound message arrives.
+    Button replies get an exact status mapping (structured signal).
+    Plain text only advances New/Message Sent -> Replied — it never
+    regresses a lead that's already further along the pipeline.
+    """
+    now = datetime.now(timezone.utc)
+    await contacts_col.update_one({"wa_id": wa_id}, {"$set": {"last_reply_at": now}})
+
+    contact = await contacts_col.find_one({"wa_id": wa_id})
+    current_status = (contact or {}).get("lead_status")
+
+    if is_button_reply and reply_text:
+        mapped = BUTTON_REPLY_STATUS_MAP.get(reply_text.strip().lower())
+        if mapped:
+            await update_contact(wa_id, {"lead_status": mapped}, triggered_by="webhook")
+            return
+
+    if current_status in PRE_REPLY_STATUSES:
+        await update_contact(wa_id, {"lead_status": "Replied"}, triggered_by="webhook")
+
+
+# ---------------------------------------------------------------------------
+# Lead import
+# ---------------------------------------------------------------------------
+
+async def create_lead_manual(name: str, phone: str, pg_name: str, location: str, email: str,
+                              source: str = "manual") -> dict:
+    wa_id = normalize_phone(phone)
+    existing = await contacts_col.find_one({"wa_id": wa_id})
+    if existing:
+        return {"created": False, "wa_id": wa_id, "reason": "duplicate phone"}
+
+    contact = await get_or_create_contact(wa_id, name=name)
+    await contacts_col.update_one({"wa_id": wa_id}, {"$set": {
+        "pg_name": pg_name, "location": location, "email": email, "source": source,
+    }})
+    return {"created": True, "wa_id": wa_id}
+
+
+async def bulk_import_leads(rows: List[dict], source: str = "excel") -> dict:
+    """
+    rows: list of dicts already mapped to {name, phone, pg_name, location, email}.
+    Dedupes by phone (wa_id) — existing contacts are skipped, not overwritten.
+    """
+    created, skipped = 0, 0
+    for row in rows:
+        phone = normalize_phone(row.get("phone", ""))
+        if not phone:
+            skipped += 1
+            continue
+        existing = await contacts_col.find_one({"wa_id": phone})
+        if existing:
+            skipped += 1
+            continue
+        await get_or_create_contact(phone, name=row.get("name") or phone)
+        await contacts_col.update_one({"wa_id": phone}, {"$set": {
+            "pg_name": row.get("pg_name"),
+            "location": row.get("location"),
+            "email": row.get("email"),
+            "source": source,
+        }})
+        created += 1
+    return {"created": created, "skipped": skipped, "total": len(rows)}

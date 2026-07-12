@@ -1,8 +1,35 @@
+<form id="bulk-send-form" hx-post="/contacts/bulk-send" hx-target="#contacts-table" hx-swap="innerHTML">
+
+{% if send_result %}
+<div class="px-5 py-3 bg-accent/10 border-b border-panel3/60 text-sm">
+  <span class="text-accent font-semibold">{{ send_result.sent }}</span> sent,
+  <span class="text-gray-400">{{ send_result.failed }} failed</span>
+  ({{ send_result.total }} selected)
+</div>
+{% endif %}
+
+<div class="flex items-center gap-2 px-5 py-3 border-b border-panel3/60 bg-panel2/40">
+  <select name="template_name" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+    {% for t in wa_templates %}
+    <option value="{{ t.name }}">{{ t.name }}</option>
+    {% else %}
+    <option value="" disabled selected>No templates synced yet</option>
+    {% endfor %}
+  </select>
+  <button type="submit" {% if not wa_templates %}disabled{% endif %}
+          class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+    Send template to selected
+  </button>
+  <span class="text-xs text-gray-500 ml-auto">Select leads below, then send</span>
+</div>
+
 <table class="w-full text-sm">
   <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
     <tr>
+      <th class="px-5 py-3 w-8"><input type="checkbox" onclick="this.closest('table').querySelectorAll('input[name=wa_ids]').forEach(cb => cb.checked = this.checked)"></th>
       <th class="text-left px-5 py-3">Name</th>
       <th class="text-left px-5 py-3">Phone</th>
+      <th class="text-left px-5 py-3">PG name</th>
       <th class="text-left px-5 py-3">City</th>
       <th class="text-left px-5 py-3">Status</th>
       <th class="text-left px-5 py-3">Tags</th>
@@ -12,6 +39,7 @@
   <tbody class="divide-y divide-panel3/40">
     {% for c in contacts %}
     <tr class="hover:bg-panel3/20 transition-colors">
+      <td class="px-5 py-3"><input type="checkbox" name="wa_ids" value="{{ c.wa_id }}"></td>
       <td class="px-5 py-3 flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-xs font-semibold shrink-0">
           {{ (c.name or "?")[0]|upper }}
@@ -20,6 +48,7 @@
         {% if c.is_blocked %}<span class="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">Blocked</span>{% endif %}
       </td>
       <td class="px-5 py-3 text-gray-400">+{{ c.wa_id }}</td>
+      <td class="px-5 py-3 text-gray-300">{{ c.pg_name or "—" }}</td>
       <td class="px-5 py-3 text-gray-400">{{ c.city or "—" }}</td>
       <td class="px-5 py-3">
         <span class="text-xs bg-panel3/60 px-2 py-1 rounded-full">{{ c.lead_status }}</span>
@@ -36,7 +65,9 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-center py-10 text-gray-500">No contacts found.</td></tr>
+    <tr><td colspan="8" class="text-center py-10 text-gray-500">No contacts found.</td></tr>
     {% endfor %}
   </tbody>
 </table>
+
+</form>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6">
+  <div class="max-w-md mx-auto space-y-4">
+    <div>
+      <h2 class="font-semibold text-lg">Add a lead</h2>
+      <p class="text-xs text-gray-500 mt-1">The 5 core fields — you can fill in the rest later from the lead's detail view.</p>
+    </div>
+
+    {% if error %}
+    <div class="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/contacts/new" class="glass rounded-2xl border border-panel3/60 p-6 space-y-4">
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Name</label>
+        <input type="text" name="name" required value="{{ name or '' }}"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Phone (WhatsApp number)</label>
+        <input type="text" name="phone" required value="{{ phone or '' }}" placeholder="e.g. 919876543210"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">PG name</label>
+        <input type="text" name="pg_name" value="{{ pg_name or '' }}"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Location</label>
+        <input type="text" name="location" value="{{ location or '' }}" placeholder="e.g. Kothrud, Pune"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Email</label>
+        <input type="email" name="email" value="{{ email or '' }}"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <button type="submit" class="w-full bg-accent hover:bg-accent2 transition-colors py-2.5 rounded-lg text-sm font-semibold">
+        Add lead
+      </button>
+    </form>
+
+    <a href="/contacts" class="block text-center text-xs text-gray-500 hover:text-gray-300">← Back to leads</a>
+  </div>
+</div>
+{% endblock %}

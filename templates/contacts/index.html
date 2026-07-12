@@ -7,22 +7,40 @@
            class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
       </svg>
-      <input type="text" name="search" placeholder="Search contacts"
-             hx-get="/contacts/table" hx-target="#contacts-table" hx-trigger="keyup changed delay:300ms" hx-include="[name='tag']"
+      <input type="text" name="search" placeholder="Search leads"
+             hx-get="/contacts/table" hx-target="#contacts-table" hx-trigger="keyup changed delay:300ms" hx-include="[name='tag'],[name='status']"
              class="w-full bg-panel3/60 rounded-xl pl-9 pr-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent/50">
     </div>
-    <div class="flex gap-2 flex-wrap">
-      <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"tag": ""}' hx-include="[name='search']"
-              class="px-3 py-1.5 rounded-full text-xs font-medium {% if not active_tag %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
-        All
-      </button>
-      {% for tag in tags %}
-      <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"tag": "{{ tag }}"}' hx-include="[name='search']"
-              class="px-3 py-1.5 rounded-full text-xs font-medium {% if active_tag == tag %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
-        {{ tag }}
-      </button>
-      {% endfor %}
+    <div class="flex gap-2">
+      <a href="/contacts/import" class="px-3 py-2 rounded-lg text-xs font-medium bg-panel3/60 hover:bg-panel3 transition-colors">Import Excel/CSV</a>
+      <a href="/contacts/new" class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors">+ Add lead</a>
     </div>
+  </div>
+
+  <div class="flex gap-2 flex-wrap">
+    <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"status": ""}' hx-include="[name='search'],[name='tag']"
+            class="px-3 py-1.5 rounded-full text-xs font-medium {% if not active_status %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
+      All statuses
+    </button>
+    {% for s in statuses %}
+    <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"status": "{{ s }}"}' hx-include="[name='search'],[name='tag']"
+            class="px-3 py-1.5 rounded-full text-xs font-medium {% if active_status == s %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
+      {{ s }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="flex gap-2 flex-wrap">
+    <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"tag": ""}' hx-include="[name='search'],[name='status']"
+            class="px-3 py-1.5 rounded-full text-xs font-medium {% if not active_tag %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
+      All
+    </button>
+    {% for tag in tags %}
+    <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"tag": "{{ tag }}"}' hx-include="[name='search'],[name='status']"
+            class="px-3 py-1.5 rounded-full text-xs font-medium {% if active_tag == tag %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
+      {{ tag }}
+    </button>
+    {% endfor %}
   </div>
 
   <div id="contacts-table" class="glass rounded-2xl border border-panel3/60 overflow-hidden">
