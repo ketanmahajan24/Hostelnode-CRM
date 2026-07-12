@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6">
+  <div class="max-w-3xl mx-auto space-y-4">
+
+    <a href="/contacts" class="text-xs text-gray-500 hover:text-gray-300">← Back to leads</a>
+
+    <div class="glass rounded-2xl border border-panel3/60 p-6 flex items-start gap-4">
+      <div class="w-14 h-14 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-xl font-semibold shrink-0">
+        {{ (contact.name or "?")[0]|upper }}
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2">
+          <h2 class="font-semibold text-lg">{{ contact.name }}</h2>
+          <span class="text-xs bg-panel3/60 px-2 py-1 rounded-full">{{ contact.lead_status }}</span>
+        </div>
+        <p class="text-sm text-gray-500">+{{ contact.wa_id }}</p>
+        {% if contact.pg_name %}<p class="text-sm text-gray-400 mt-1">{{ contact.pg_name }}{% if contact.location %} · {{ contact.location }}{% endif %}</p>{% endif %}
+        {% if contact.email %}<p class="text-xs text-gray-500">{{ contact.email }}</p>{% endif %}
+      </div>
+      <a href="/conversations/{{ contact.wa_id }}" class="text-accent text-xs hover:underline whitespace-nowrap">Open chat →</a>
+    </div>
+
+    <!-- Editable fields -->
+    <form hx-post="/contacts/{{ contact.wa_id }}/update" hx-swap="none" hx-trigger="change"
+          class="glass rounded-2xl border border-panel3/60 p-6 grid grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs text-gray-500">Name</label>
+        <input type="text" name="name" value="{{ contact.name }}"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">City</label>
+        <input type="text" name="city" value="{{ contact.city or '' }}"
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div class="col-span-2">
+        <label class="text-xs text-gray-500">Lead status</label>
+        <select name="lead_status" class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-accent/50">
+          {% for s in statuses %}
+          <option value="{{ s }}" {% if contact.lead_status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    <!-- Log a call -->
+    <div class="glass rounded-2xl border border-panel3/60 p-6">
+      <p class="text-sm font-medium mb-3">Log a call</p>
+      <form method="post" action="/contacts/{{ contact.wa_id }}/call" class="flex gap-2 flex-wrap">
+        <select name="outcome" required class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none">
+          <option value="interested">Interested</option>
+          <option value="no_answer">No answer</option>
+          <option value="callback">Callback requested</option>
+          <option value="not_interested">Not interested</option>
+        </select>
+        <input type="text" name="notes" placeholder="Call notes (optional)"
+               class="flex-1 min-w-[160px] bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+        <button type="submit" class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors">
+          Save call
+        </button>
+      </form>
+    </div>
+
+    <!-- Add a note -->
+    <div class="glass rounded-2xl border border-panel3/60 p-6">
+      <p class="text-sm font-medium mb-3">Add a note</p>
+      <form method="post" action="/contacts/{{ contact.wa_id }}/detail/note" class="flex gap-2">
+        <input type="text" name="text" required placeholder="Add a note…"
+               class="flex-1 bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+        <button type="submit" class="px-3 py-2 rounded-lg text-xs font-medium bg-panel3/60 hover:bg-panel3 transition-colors">
+          Save note
+        </button>
+      </form>
+    </div>
+
+    <!-- Activity timeline -->
+    <div class="glass rounded-2xl border border-panel3/60 p-6">
+      <p class="text-sm font-medium mb-4">Activity timeline</p>
+      <div class="space-y-3">
+        {% for e in timeline %}
+        <div class="flex gap-3 text-sm">
+          {% if e.kind == "status" %}
+          <span class="w-2 h-2 rounded-full bg-accent mt-1.5 shrink-0"></span>
+          <div>
+            <p class="text-gray-300">Status changed{% if e.from_status %} from <span class="text-gray-400">{{ e.from_status }}</span>{% endif %} to <span class="text-accent">{{ e.to_status }}</span></p>
+            <p class="text-xs text-gray-600">{{ e.created_at | fmt_datetime_full }} · {{ e.triggered_by }}</p>
+          </div>
+          {% elif e.kind == "note" %}
+          <span class="w-2 h-2 rounded-full bg-gray-500 mt-1.5 shrink-0"></span>
+          <div>
+            <p class="text-gray-300">{{ e.text }}</p>
+            <p class="text-xs text-gray-600">{{ e.created_at | fmt_datetime_full }} · note</p>
+          </div>
+          {% elif e.kind == "call" %}
+          <span class="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></span>
+          <div>
+            <p class="text-gray-300">Call logged — <span class="text-blue-400">{{ e.outcome }}</span>{% if e.notes %}: {{ e.notes }}{% endif %}</p>
+            <p class="text-xs text-gray-600">{{ e.created_at | fmt_datetime_full }} · {{ e.logged_by }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">No activity yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -3,24 +3,27 @@
 {% if send_result %}
 <div class="px-5 py-3 bg-accent/10 border-b border-panel3/60 text-sm">
   <span class="text-accent font-semibold">{{ send_result.sent }}</span> sent,
-  <span class="text-gray-400">{{ send_result.failed }} failed</span>
+  <span class="text-gray-400">{{ send_result.failed }} failed</span>{% if send_result.unmapped %},
+  <span class="text-amber-400">{{ send_result.unmapped }} skipped (no template mapped to that status)</span>{% endif %}
   ({{ send_result.total }} selected)
 </div>
 {% endif %}
 
 <div class="flex items-center gap-2 px-5 py-3 border-b border-panel3/60 bg-panel2/40">
   <select name="template_name" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+    <option value="__auto__">Auto — match each lead's status</option>
     {% for t in wa_templates %}
     <option value="{{ t.name }}">{{ t.name }}</option>
-    {% else %}
-    <option value="" disabled selected>No templates synced yet</option>
     {% endfor %}
+  </select>
+  <select name="language" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none">
+    <option value="en_US">en_US</option>
   </select>
   <button type="submit" {% if not wa_templates %}disabled{% endif %}
           class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-    Send template to selected
+    Send to selected
   </button>
-  <span class="text-xs text-gray-500 ml-auto">Select leads below, then send</span>
+  <span class="text-xs text-gray-500 ml-auto">"Auto" sends each lead the template mapped to their current status — set mappings in Templates</span>
 </div>
 
 <table class="w-full text-sm">
@@ -44,7 +47,7 @@
         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-700 flex items-center justify-center text-xs font-semibold shrink-0">
           {{ (c.name or "?")[0]|upper }}
         </div>
-        <span class="font-medium">{{ c.name }}</span>
+        <a href="/contacts/{{ c.wa_id }}/detail" class="font-medium hover:text-accent hover:underline">{{ c.name }}</a>
         {% if c.is_blocked %}<span class="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">Blocked</span>{% endif %}
       </td>
       <td class="px-5 py-3 text-gray-400">+{{ c.wa_id }}</td>

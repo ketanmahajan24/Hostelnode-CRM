@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 from typing import Optional, List
-from app.database import contacts_col, status_history_col
+from app.database import contacts_col, status_history_col, calls_col
 
 # Statuses considered "not yet replied" — an inbound plain-text message from
 # these states auto-advances to Replied. Anything further along the pipeline
@@ -117,6 +117,46 @@ async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None,
     for d in docs:
         d["_id"] = str(d["_id"])
     return docs
+
+
+async def log_call(wa_id: str, outcome: str, notes: str, logged_by: str):
+    await calls_col.insert_one({
+        "wa_id": wa_id, "outcome": outcome, "notes": notes,
+        "logged_by": logged_by, "created_at": datetime.now(timezone.utc),
+    })
+
+
+async def get_lead_detail(wa_id: str) -> Optional[dict]:
+    contact = await contacts_col.find_one({"wa_id": wa_id})
+    if not contact:
+        return None
+    contact["_id"] = str(contact["_id"])
+    return contact
+
+
+async def get_activity_timeline(wa_id: str) -> List[dict]:
+    """Merges status changes, notes, and call logs into one time-ordered feed."""
+    events = []
+
+    async for h in status_history_col.find({"wa_id": wa_id}).sort("created_at", -1):
+        events.append({
+            "kind": "status", "created_at": h["created_at"],
+            "from_status": h.get("from_status"), "to_status": h.get("to_status"),
+            "triggered_by": h.get("triggered_by"),
+        })
+
+    contact = await contacts_col.find_one({"wa_id": wa_id}) or {}
+    for note in contact.get("notes", []):
+        events.append({"kind": "note", "created_at": note.get("created_at"), "text": note.get("text")})
+
+    async for c in calls_col.find({"wa_id": wa_id}).sort("created_at", -1):
+        events.append({
+            "kind": "call", "created_at": c["created_at"],
+            "outcome": c.get("outcome"), "notes": c.get("notes"), "logged_by": c.get("logged_by"),
+        })
+
+    events.sort(key=lambda e: e["created_at"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return events
 
 
 async def block_contact(wa_id: str, blocked: bool = True):

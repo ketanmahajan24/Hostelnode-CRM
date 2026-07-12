@@ -19,6 +19,7 @@ media_col = db["media"]
 users_col = db["users"]
 auth_events_col = db["auth_events"]
 status_history_col = db["status_history"]
+calls_col = db["calls"]
 
 
 async def init_indexes():
@@ -50,3 +51,6 @@ async def init_indexes():
 
     await status_history_col.create_index("wa_id")
     await status_history_col.create_index("created_at")
+
+    await calls_col.create_index("wa_id")
+    await calls_col.create_index("created_at")

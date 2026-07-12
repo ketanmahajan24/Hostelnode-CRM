@@ -8,6 +8,7 @@
       <th class="text-left px-5 py-3">Language</th>
       <th class="text-left px-5 py-3">Category</th>
       <th class="text-left px-5 py-3">Status</th>
+      <th class="text-left px-5 py-3">Maps to lead status</th>
       <th class="text-left px-5 py-3">Preview</th>
     </tr>
   </thead>
@@ -24,11 +25,24 @@
               {% else %}bg-red-500/15 text-red-400{% endif %}">
           {{ t.status }}
         </span>
+        {% if t.status != 'APPROVED' %}
+        <p class="text-[10px] text-gray-600 mt-1">Won't be auto-sent until Meta approves it</p>
+        {% endif %}
+      </td>
+      <td class="px-5 py-3">
+        <form hx-post="/templates/{{ t._id }}/map" hx-target="#templates-table" hx-trigger="change">
+          <select name="lead_status" class="bg-panel3/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+            <option value="">— Not mapped —</option>
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if t.maps_to_lead_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
       </td>
       <td class="px-5 py-3 text-gray-400 max-w-sm truncate">{{ t.body_text }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="text-center py-10 text-gray-500">No templates synced yet. Click "Sync from Meta" above.</td></tr>
+    <tr><td colspan="6" class="text-center py-10 text-gray-500">No templates synced yet. Click "Sync from Meta" above.</td></tr>
     {% endfor %}
   </tbody>
 </table>
