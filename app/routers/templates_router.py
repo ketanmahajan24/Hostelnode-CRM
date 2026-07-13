@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.database import templates_col
 from app.services import whatsapp_service
 from app.services.whatsapp_service import WhatsAppAPIError
+from app.models.contact import LEAD_STATUSES
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -16,7 +17,7 @@ async def templates_page(request: Request):
     for d in docs:
         d["_id"] = str(d["_id"])
     return templates.TemplateResponse("templates_page/index.html", {
-        "request": request, "wa_templates": docs, "page": "templates",
+        "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES, "page": "templates",
     })
 
 
@@ -29,14 +30,19 @@ async def sync_templates(request: Request):
             body_component = next((c for c in t.get("components", []) if c.get("type") == "BODY"), {})
             await templates_col.update_one(
                 {"name": t["name"], "language": t["language"]},
-                {"$set": {
-                    "name": t["name"],
-                    "language": t["language"],
-                    "category": t.get("category", ""),
-                    "status": t.get("status", ""),
-                    "components": t.get("components", []),
-                    "body_text": body_component.get("text", ""),
-                }},
+                {
+                    "$set": {
+                        "name": t["name"],
+                        "language": t["language"],
+                        "category": t.get("category", ""),
+                        "status": t.get("status", ""),
+                        "components": t.get("components", []),
+                        "body_text": body_component.get("text", ""),
+                    },
+                    # Only set maps_to_lead_status if this is a brand-new template doc —
+                    # a re-sync must never wipe out a mapping you already configured.
+                    "$setOnInsert": {"maps_to_lead_status": None},
+                },
                 upsert=True,
             )
     except WhatsAppAPIError as e:
@@ -46,5 +52,20 @@ async def sync_templates(request: Request):
     for d in docs:
         d["_id"] = str(d["_id"])
     return templates.TemplateResponse("templates_page/table.html", {
-        "request": request, "wa_templates": docs, "error": error,
+        "request": request, "wa_templates": docs, "error": error, "statuses": LEAD_STATUSES,
+    })
+
+
+@router.post("/templates/{template_id}/map", response_class=HTMLResponse)
+async def map_template_to_status(request: Request, template_id: str, lead_status: str = Form("")):
+    from bson import ObjectId
+    await templates_col.update_one(
+        {"_id": ObjectId(template_id)},
+        {"$set": {"maps_to_lead_status": lead_status or None}},
+    )
+    docs = [d async for d in templates_col.find().sort("name", 1)]
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    return templates.TemplateResponse("templates_page/table.html", {
+        "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES,
     })

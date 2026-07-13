@@ -44,6 +44,40 @@
       </div>
     </form>
 
+    <!-- Snooze -->
+    <div class="glass rounded-2xl border border-panel3/60 p-6">
+      <p class="text-sm font-medium mb-3">Snooze follow-up</p>
+      <form method="post" action="/contacts/{{ contact.wa_id }}/snooze" class="flex gap-2 items-center">
+        <span class="text-xs text-gray-500">Remind me again in</span>
+        <input type="number" name="days" min="1" value="3" required
+               class="w-16 bg-panel3/50 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-accent/50">
+        <span class="text-xs text-gray-500">days</span>
+        <button type="submit" class="px-3 py-2 rounded-lg text-xs font-medium bg-panel3/60 hover:bg-panel3 transition-colors">
+          Snooze
+        </button>
+      </form>
+    </div>
+
+    <!-- Snooze / reschedule follow-up -->
+    <div class="glass rounded-2xl border border-panel3/60 p-6">
+      <p class="text-sm font-medium mb-1">Follow-up</p>
+      {% if contact.next_follow_up_at %}
+      <p class="text-xs text-gray-500 mb-3">Next automatic check: {{ contact.next_follow_up_at | fmt_datetime_full }}</p>
+      {% else %}
+      <p class="text-xs text-gray-500 mb-3">No follow-up scheduled — set a rule for this status, or snooze manually.</p>
+      {% endif %}
+      <form method="post" action="/contacts/{{ contact.wa_id }}/snooze" class="flex gap-2">
+        <select name="days" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none">
+          <option value="1">Remind in 1 day</option>
+          <option value="3" selected>Remind in 3 days</option>
+          <option value="7">Remind in 1 week</option>
+        </select>
+        <button type="submit" class="px-3 py-2 rounded-lg text-xs font-medium bg-panel3/60 hover:bg-panel3 transition-colors">
+          Snooze
+        </button>
+      </form>
+    </div>
+
     <!-- Log a call -->
     <div class="glass rounded-2xl border border-panel3/60 p-6">
       <p class="text-sm font-medium mb-3">Log a call</p>

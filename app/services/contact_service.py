@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timezone
 from typing import Optional, List
-from app.database import contacts_col, status_history_col, calls_col
+from app.database import contacts_col, status_history_col, calls_col, follow_up_rules_col
 
 # Statuses considered "not yet replied" — an inbound plain-text message from
 # these states auto-advances to Replied. Anything further along the pipeline
@@ -79,6 +79,11 @@ async def update_contact(wa_id: str, updates: dict, triggered_by: str = "user") 
         await log_status_change(wa_id, old_status, updates["lead_status"], triggered_by=triggered_by)
     if updates:
         await contacts_col.update_one({"wa_id": wa_id}, {"$set": updates})
+    if "lead_status" in updates:
+        # Import here (not at module top) to avoid a circular import between
+        # contact_service and follow_up_service, which both reference each other.
+        from app.services.follow_up_service import schedule_next_follow_up
+        await schedule_next_follow_up(wa_id, updates["lead_status"])
     return await contacts_col.find_one({"wa_id": wa_id})
 
 

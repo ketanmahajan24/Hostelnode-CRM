@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div>
+    <h2 class="font-semibold text-lg">Needs attention</h2>
+    <p class="text-xs text-gray-500 mt-1">Auto-created by follow-up rules — leads that need a human touch.</p>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-3">Lead</th>
+          <th class="text-left px-5 py-3">Type</th>
+          <th class="text-left px-5 py-3">Note</th>
+          <th class="text-left px-5 py-3">Due</th>
+          <th class="text-right px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for t in tasks %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-5 py-3">
+            <a href="/contacts/{{ t.wa_id }}/detail" class="text-accent hover:underline">+{{ t.wa_id }}</a>
+          </td>
+          <td class="px-5 py-3">
+            <span class="text-xs px-2 py-1 rounded-full {% if t.type == 'escalation' %}bg-red-500/15 text-red-400{% else %}bg-amber-500/15 text-amber-400{% endif %}">
+              {{ t.type.replace('_', ' ') }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-gray-300">{{ t.note }}</td>
+          <td class="px-5 py-3 text-gray-500 text-xs">{{ t.due_at | fmt_datetime_full }}</td>
+          <td class="px-5 py-3 text-right">
+            <form method="post" action="/tasks/{{ t._id }}/done">
+              <button type="submit" class="text-xs bg-panel3/60 hover:bg-panel3 px-3 py-1.5 rounded-lg">Mark done</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center py-10 text-gray-500">Nothing needs attention right now.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

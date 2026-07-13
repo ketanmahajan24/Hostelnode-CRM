@@ -20,6 +20,8 @@ users_col = db["users"]
 auth_events_col = db["auth_events"]
 status_history_col = db["status_history"]
 calls_col = db["calls"]
+follow_up_rules_col = db["follow_up_rules"]
+tasks_col = db["tasks"]
 
 
 async def init_indexes():
@@ -27,6 +29,7 @@ async def init_indexes():
     await contacts_col.create_index("wa_id", unique=True)
     await contacts_col.create_index("name")
     await contacts_col.create_index("tags")
+    await contacts_col.create_index("next_follow_up_at")
 
     await conversations_col.create_index("wa_id", unique=True)
     await conversations_col.create_index("last_message_at")
@@ -54,3 +57,9 @@ async def init_indexes():
 
     await calls_col.create_index("wa_id")
     await calls_col.create_index("created_at")
+
+    await follow_up_rules_col.create_index("trigger_status")
+
+    await tasks_col.create_index("due_at")
+    await tasks_col.create_index("status")
+    await tasks_col.create_index("wa_id")

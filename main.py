@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.database import init_indexes
 from app.middlewares.logging import LoggingMiddleware
@@ -24,8 +25,10 @@ from app.config import settings
 from app.routers import dashboard, contacts, campaigns, analytics
 from app.routers import conversations as conversations_router
 from app.routers import templates_router, settings_router, auth as auth_router, security as security_router
+from app.routers import follow_up_rules as follow_up_rules_router
 from app.webhook import whatsapp_webhook
 from app.websocket import ws_router
+from app.services.follow_up_service import run_due_follow_ups
 
 
 async def check_whatsapp_connection():
@@ -46,11 +49,22 @@ async def check_whatsapp_connection():
         print(f"❌ WhatsApp API NOT connected: {e}", flush=True)
 
 
+scheduler = AsyncIOScheduler()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_indexes()
     await check_whatsapp_connection()   # <-- yahan call kiya
+
+    # Follow-up engine: checks for due leads every 2 hours and runs whichever
+    # rule matches their current status (send nudge / notify rep / escalate).
+    scheduler.add_job(run_due_follow_ups, "interval", hours=2, id="follow_up_check", replace_existing=True)
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown(wait=False)
 
 
 app = FastAPI(title="HostelNode CRM", lifespan=lifespan)
@@ -85,5 +99,6 @@ app.include_router(campaigns.router)
 app.include_router(analytics.router)
 app.include_router(settings_router.router)
 app.include_router(security_router.router)
+app.include_router(follow_up_rules_router.router)
 app.include_router(whatsapp_webhook.router)
 app.include_router(ws_router.router)

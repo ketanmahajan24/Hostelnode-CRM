@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div>
+    <h2 class="font-semibold text-lg">Follow-up rules</h2>
+    <p class="text-xs text-gray-500 mt-1">
+      Data-driven automation — edit timing and actions here without touching code.
+      The scheduler checks for due leads periodically and runs whichever rule matches their status.
+    </p>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-3">Trigger status</th>
+          <th class="text-left px-5 py-3">Days stale</th>
+          <th class="text-left px-5 py-3">Action</th>
+          <th class="text-left px-5 py-3">Template</th>
+          <th class="text-left px-5 py-3">Active</th>
+          <th class="text-right px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for r in rules %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-5 py-3 font-medium">{{ r.trigger_status }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ r.days_since_last_activity }} days</td>
+          <td class="px-5 py-3 text-gray-300">{{ r.action.replace('_', ' ') }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ r.template_name or "—" }}</td>
+          <td class="px-5 py-3">
+            <form hx-post="/follow-up-rules/{{ r._id }}/toggle" hx-swap="none" hx-on::after-request="location.reload()">
+              <button type="submit" class="text-xs px-2 py-1 rounded-full {% if r.is_active %}bg-emerald-500/15 text-emerald-400{% else %}bg-gray-500/15 text-gray-400{% endif %}">
+                {{ "Active" if r.is_active else "Paused" }}
+              </button>
+            </form>
+          </td>
+          <td class="px-5 py-3 text-right">
+            <form method="post" action="/follow-up-rules/{{ r._id }}/delete">
+              <button type="submit" class="text-xs text-red-400 hover:underline">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center py-8 text-gray-500">No rules yet — add one below.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 p-6">
+    <p class="text-sm font-medium mb-4">Add a rule</p>
+    <form method="post" action="/follow-up-rules" class="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
+      <div>
+        <label class="text-xs text-gray-500">If status is</label>
+        <select name="trigger_status" required class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+          {% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Stale for (days)</label>
+        <input type="number" name="days_since_last_activity" min="1" value="2" required
+               class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Then</label>
+        <select name="action" required class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+          {% for a in actions %}<option value="{{ a }}">{{ a.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500">Template (if sending)</label>
+        <select name="template_name" class="w-full bg-panel3/50 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none">
+          <option value="">— none —</option>
+          {% for t in wa_templates %}<option value="{{ t.name }}">{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="bg-accent hover:bg-accent2 transition-colors py-2 rounded-lg text-sm font-semibold">
+        Add rule
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

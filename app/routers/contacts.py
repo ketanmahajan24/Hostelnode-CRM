@@ -85,6 +85,13 @@ async def block_contact(wa_id: str):
 # Lead import — manual + Excel/CSV
 # ---------------------------------------------------------------------------
 
+@router.post("/contacts/{wa_id}/snooze")
+async def snooze_lead(wa_id: str, days: int = Form(...)):
+    from app.services.follow_up_service import snooze_lead as _snooze
+    await _snooze(wa_id, days)
+    return RedirectResponse(url=f"/contacts/{wa_id}/detail", status_code=303)
+
+
 @router.get("/contacts/{wa_id}/detail", response_class=HTMLResponse)
 async def lead_detail_page(request: Request, wa_id: str):
     contact = await contact_service.get_lead_detail(wa_id)
@@ -100,6 +107,13 @@ async def lead_detail_page(request: Request, wa_id: str):
 @router.post("/contacts/{wa_id}/detail/note")
 async def add_note_from_detail(wa_id: str, text: str = Form(...)):
     await contact_service.add_note(wa_id, text)
+    return RedirectResponse(url=f"/contacts/{wa_id}/detail", status_code=303)
+
+
+@router.post("/contacts/{wa_id}/snooze")
+async def snooze_lead(wa_id: str, days: int = Form(...)):
+    from app.services.follow_up_service import snooze_lead as do_snooze
+    await do_snooze(wa_id, days)
     return RedirectResponse(url=f"/contacts/{wa_id}/detail", status_code=303)
 
 
