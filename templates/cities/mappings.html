@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="font-semibold text-lg">City mappings</h2>
+      <p class="text-xs text-gray-500 mt-1">
+        Messy imported location text gets auto-guessed as a city. Confirm or merge those guesses
+        here so your city-wise reports stay clean (e.g. "Bombay" and "mumbai" both become "Mumbai").
+      </p>
+    </div>
+    <a href="/cities/dashboard" class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors">
+      View city dashboard →
+    </a>
+  </div>
+
+  {% if unmapped %}
+  <div class="glass rounded-2xl border border-amber-500/30 overflow-hidden">
+    <p class="px-5 py-3 text-sm font-medium bg-amber-500/10 text-amber-400">
+      {{ unmapped|length }} unconfirmed guess{{ "es" if unmapped|length != 1 else "" }} — please review
+    </p>
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-3">Guessed as</th>
+          <th class="text-left px-5 py-3">Raw text seen</th>
+          <th class="text-left px-5 py-3">Confirm as</th>
+          <th class="text-left px-5 py-3">State</th>
+          <th class="text-right px-5 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for m in unmapped %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-5 py-3 font-medium">{{ m.canonical_city }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ m.raw_variants | join(", ") }}</td>
+          <td class="px-5 py-3" colspan="3">
+            <form method="post" action="/cities/{{ m._id }}/confirm" class="flex gap-2 items-center">
+              <input type="text" name="canonical_city" required value="{{ m.canonical_city }}" placeholder="e.g. Mumbai"
+                     class="bg-panel3/50 rounded-lg px-3 py-1.5 text-xs focus:outline-none w-32">
+              <input type="text" name="canonical_state" placeholder="State (optional)"
+                     class="bg-panel3/50 rounded-lg px-3 py-1.5 text-xs focus:outline-none w-32">
+              <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors">
+                Confirm
+              </button>
+              <button formaction="/cities/{{ m._id }}/delete" class="px-3 py-1.5 rounded-lg text-xs text-red-400 hover:underline">
+                Discard
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <p class="px-5 py-3 text-sm font-medium bg-panel2/40">Confirmed cities ({{ mapped|length }})</p>
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-3">City</th>
+          <th class="text-left px-5 py-3">State</th>
+          <th class="text-left px-5 py-3">Raw variants merged in</th>
+          <th class="text-left px-5 py-3">High-conversion</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for m in mapped %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-5 py-3 font-medium">{{ m.canonical_city }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ m.canonical_state or "—" }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ m.raw_variants | join(", ") }}</td>
+          <td class="px-5 py-3">
+            <form method="post" action="/cities/{{ m.canonical_city }}/toggle-high-conversion">
+              <button type="submit" class="text-xs px-2 py-1 rounded-full {% if m.is_high_conversion %}bg-emerald-500/15 text-emerald-400{% else %}bg-gray-500/15 text-gray-400{% endif %}">
+                {{ "Yes — adds +10 priority" if m.is_high_conversion else "No" }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center py-8 text-gray-500">No confirmed cities yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

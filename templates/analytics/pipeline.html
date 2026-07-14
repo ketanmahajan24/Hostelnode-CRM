@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-6">
+
+  <div class="flex gap-2">
+    <a href="/analytics" class="px-3 py-1.5 rounded-full text-xs font-medium bg-panel3/60 text-gray-400">Messages</a>
+    <a href="/analytics/pipeline" class="px-3 py-1.5 rounded-full text-xs font-medium bg-accent text-white">Pipeline</a>
+  </div>
+
+  <!-- Overall funnel -->
+  <div class="glass rounded-2xl border border-panel3/60 p-6">
+    <h2 class="font-semibold mb-4">Overall funnel <span class="text-xs text-gray-500 font-normal">({{ total_leads }} leads total)</span></h2>
+    <div class="space-y-2">
+      {% for f in funnel %}
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-400 w-28 shrink-0">{{ f.status }}</span>
+        <div class="flex-1 bg-panel3/40 rounded-full h-4 overflow-hidden">
+          <div class="h-4 rounded-full bg-accent" style="width: {{ (f.count / total_leads * 100) if total_leads else 0 }}%"></div>
+        </div>
+        <span class="text-xs text-gray-300 w-8 text-right">{{ f.count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Automation split -->
+  <div class="glass rounded-2xl border border-panel3/60 p-6">
+    <h2 class="font-semibold mb-2">Automation vs manual</h2>
+    <p class="text-xs text-gray-500 mb-3">Share of all status changes that happened automatically (webhook replies, rule engine) vs a human clicking a status change.</p>
+    <div class="flex items-center gap-3">
+      <div class="flex-1 bg-panel3/40 rounded-full h-4 overflow-hidden flex">
+        <div class="h-4 bg-emerald-500" style="width: {{ split.automated_pct }}%"></div>
+      </div>
+      <span class="text-xs text-gray-300 w-16 text-right">{{ split.automated_pct }}% auto</span>
+    </div>
+    <p class="text-xs text-gray-500 mt-2">{{ split.automated }} automated · {{ split.manual }} manual · {{ split.total }} total changes</p>
+  </div>
+
+  <!-- Funnel by source -->
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <h2 class="font-semibold px-6 pt-6 pb-2">Funnel by source</h2>
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-6 py-3">Source</th>
+          <th class="text-left px-6 py-3">Total leads</th>
+          <th class="text-left px-6 py-3">Onboarded</th>
+          <th class="text-left px-6 py-3">Lost</th>
+          <th class="text-left px-6 py-3">Conversion rate</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for s in by_source %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-6 py-3 font-medium">{{ s.source }}</td>
+          <td class="px-6 py-3 text-gray-400">{{ s.total }}</td>
+          <td class="px-6 py-3 text-emerald-400">{{ s.onboarded }}</td>
+          <td class="px-6 py-3 text-gray-500">{{ s.lost }}</td>
+          <td class="px-6 py-3 text-gray-300">{{ s.conversion_rate }}%</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center py-8 text-gray-500">No source data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Avg days per stage -->
+  <div class="glass rounded-2xl border border-panel3/60 p-6">
+    <h2 class="font-semibold mb-1">Average time per stage</h2>
+    <p class="text-xs text-gray-500 mb-4">Includes leads still currently in that stage, counted up to today — so a stage full of stuck leads will show a higher average. That's accurate, not a bug.</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {% for status, days in avg_days.items() %}
+      <div class="bg-panel3/30 rounded-xl p-3">
+        <p class="text-xs text-gray-500">{{ status }}</p>
+        <p class="text-lg font-semibold">{{ days }} <span class="text-xs text-gray-500 font-normal">days</span></p>
+      </div>
+      {% else %}
+      <p class="text-sm text-gray-500 col-span-full text-center py-4">No stage duration data yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Rep activity -->
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <h2 class="font-semibold px-6 pt-6 pb-2">Rep activity</h2>
+    <p class="text-xs text-gray-500 px-6 pb-3">Manual status changes per person — automated changes (webhook/rule engine) aren't counted here.</p>
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-6 py-3">Rep</th>
+          <th class="text-left px-6 py-3">Manual changes made</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for r in rep_activity %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-6 py-3 font-medium">{{ r.name }}{% if r.email %} <span class="text-xs text-gray-500">({{ r.email }})</span>{% endif %}</td>
+          <td class="px-6 py-3 text-gray-300">{{ r.changes }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="text-center py-8 text-gray-500">No manual activity recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

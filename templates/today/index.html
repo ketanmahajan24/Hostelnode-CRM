@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div>
+    <h2 class="font-semibold text-lg">Today's follow-ups</h2>
+    <p class="text-xs text-gray-500 mt-1">
+      Everything worth acting on right now — tasks, due follow-ups, and stale leads with no rule set —
+      sorted by priority score so the most-actionable lead is always on top.
+    </p>
+  </div>
+
+  <div class="glass rounded-2xl border border-panel3/60 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
+        <tr>
+          <th class="text-left px-5 py-3">Lead</th>
+          <th class="text-left px-5 py-3">Status</th>
+          <th class="text-left px-5 py-3">City</th>
+          <th class="text-left px-5 py-3">Why it's here</th>
+          <th class="text-right px-5 py-3">Priority</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-panel3/40">
+        {% for r in rows %}
+        <tr class="hover:bg-panel3/20 transition-colors">
+          <td class="px-5 py-3">
+            <a href="/contacts/{{ r.wa_id }}/detail" class="font-medium hover:text-accent hover:underline">{{ r.name }}</a>
+            {% if r.pg_name %}<p class="text-xs text-gray-500">{{ r.pg_name }}</p>{% endif %}
+          </td>
+          <td class="px-5 py-3"><span class="text-xs bg-panel3/60 px-2 py-1 rounded-full">{{ r.lead_status }}</span></td>
+          <td class="px-5 py-3 text-gray-400">{{ r.city or "—" }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ r.reason }}</td>
+          <td class="px-5 py-3 text-right">
+            <span class="text-xs font-mono px-2 py-1 rounded-full
+                  {% if r.score >= 15 %}bg-emerald-500/15 text-emerald-400
+                  {% elif r.score >= 0 %}bg-panel3/60 text-gray-300
+                  {% else %}bg-red-500/15 text-red-400{% endif %}">
+              {{ r.score }}
+            </span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center py-10 text-gray-500">Nothing needs your attention right now.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

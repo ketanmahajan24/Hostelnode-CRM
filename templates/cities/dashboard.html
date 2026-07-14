@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="h-full overflow-y-auto p-6 space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h2 class="font-semibold text-lg">City-wise pipeline</h2>
+      <p class="text-xs text-gray-500 mt-1">Funnel, conversion rate, and stuck-lead count broken down by city.</p>
+    </div>
+    <form method="get" action="/cities/dashboard" class="flex gap-2">
+      <select name="city" onchange="this.form.submit()" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none">
+        <option value="">All cities</option>
+        {% for c in known_cities %}
+        <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if not city_stats %}
+  <div class="glass rounded-2xl border border-panel3/60 p-10 text-center text-gray-500 text-sm">
+    No confirmed cities with leads yet. <a href="/cities" class="text-accent hover:underline">Review city mappings →</a>
+  </div>
+  {% endif %}
+
+  {% for s in city_stats %}
+  <div class="glass rounded-2xl border border-panel3/60 p-6 space-y-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h3 class="font-semibold">{{ s.city }}</h3>
+      <div class="flex gap-4 text-xs text-gray-400">
+        <span><span class="text-gray-200 font-medium">{{ s.total }}</span> total leads</span>
+        <span><span class="text-emerald-400 font-medium">{{ s.conversion_rate }}%</span> conversion</span>
+        {% if s.stuck %}
+        <span class="text-amber-400 font-medium">{{ s.stuck }} stuck 3+ days</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex gap-1 h-6 rounded-lg overflow-hidden">
+      {% for status in statuses %}
+        {% set count = s.breakdown.get(status, 0) %}
+        {% if count > 0 %}
+        <div class="flex items-center justify-center text-[10px] text-white/90 whitespace-nowrap px-1"
+             style="width: {{ (count / s.total * 100) | round(1) }}%; background-color:
+               {% if status == 'Onboarded' %}#10b981
+               {% elif status == 'Lost' %}#6b7280
+               {% elif status in ['Interested','Wants Details','Signed Up','Listed'] %}#14b8a6
+               {% else %}#7c6ee6{% endif %};"
+             title="{{ status }}: {{ count }}">
+          {% if count / s.total > 0.08 %}{{ count }}{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+      {% for status in statuses %}
+        {% set count = s.breakdown.get(status, 0) %}
+        {% if count > 0 %}
+        <span>{{ status }}: <span class="text-gray-300">{{ count }}</span></span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -25,20 +25,21 @@ def _current_user_id(request: Request) -> str:
 
 @router.get("/contacts", response_class=HTMLResponse)
 async def contacts_page(request: Request, search: Optional[str] = None, tag: Optional[str] = None,
-                         status: Optional[str] = None):
-    contacts = await contact_service.list_contacts(search, tag, status)
+                         status: Optional[str] = None, city: Optional[str] = None):
+    contacts = await contact_service.list_contacts(search, tag, status, city)
     wa_templates = [t async for t in templates_col.find().sort("name", 1)]
+    cities = sorted([c for c in await contact_service.list_cities() if c])
     return templates.TemplateResponse("contacts/index.html", {
         "request": request, "contacts": contacts, "tags": AVAILABLE_TAGS,
-        "active_tag": tag, "active_status": status, "statuses": LEAD_STATUSES,
-        "wa_templates": wa_templates, "page": "contacts",
+        "active_tag": tag, "active_status": status, "active_city": city, "statuses": LEAD_STATUSES,
+        "wa_templates": wa_templates, "cities": cities, "page": "contacts",
     })
 
 
 @router.get("/contacts/table", response_class=HTMLResponse)
 async def contacts_table_partial(request: Request, search: Optional[str] = None, tag: Optional[str] = None,
-                                  status: Optional[str] = None):
-    contacts = await contact_service.list_contacts(search, tag, status)
+                                  status: Optional[str] = None, city: Optional[str] = None):
+    contacts = await contact_service.list_contacts(search, tag, status, city)
     wa_templates = [t async for t in templates_col.find().sort("name", 1)]
     return templates.TemplateResponse("contacts/table.html", {
         "request": request, "contacts": contacts, "wa_templates": wa_templates,
@@ -121,6 +122,31 @@ async def snooze_lead(wa_id: str, days: int = Form(...)):
 async def log_call(request: Request, wa_id: str, outcome: str = Form(...), notes: str = Form("")):
     await contact_service.log_call(wa_id, outcome, notes, logged_by=_current_user_id(request))
     return RedirectResponse(url=f"/contacts/{wa_id}/detail", status_code=303)
+
+
+@router.get("/contacts/cities", response_class=HTMLResponse)
+async def city_mappings_page(request: Request):
+    from app.services import city_service
+    mappings = await city_service.list_mappings()
+    return templates.TemplateResponse("contacts/cities.html", {
+        "request": request, "mappings": mappings, "page": "contacts",
+    })
+
+
+@router.post("/contacts/cities")
+async def create_city_mapping(canonical_city: str = Form(...), canonical_state: str = Form(""),
+                               raw_variants: str = Form(...)):
+    from app.services import city_service
+    variants = [v.strip() for v in raw_variants.split(",") if v.strip()]
+    await city_service.create_or_update_mapping(canonical_city.strip(), canonical_state.strip() or None, variants)
+    return RedirectResponse(url="/contacts/cities", status_code=303)
+
+
+@router.post("/contacts/cities/{mapping_id}/delete")
+async def delete_city_mapping(mapping_id: str):
+    from app.services import city_service
+    await city_service.delete_mapping(mapping_id)
+    return RedirectResponse(url="/contacts/cities", status_code=303)
 
 
 @router.get("/contacts/new", response_class=HTMLResponse)

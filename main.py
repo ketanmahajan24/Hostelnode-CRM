@@ -26,6 +26,8 @@ from app.routers import dashboard, contacts, campaigns, analytics
 from app.routers import conversations as conversations_router
 from app.routers import templates_router, settings_router, auth as auth_router, security as security_router
 from app.routers import follow_up_rules as follow_up_rules_router
+from app.routers import cities as cities_router
+from app.routers import today as today_router
 from app.webhook import whatsapp_webhook
 from app.websocket import ws_router
 from app.services.follow_up_service import run_due_follow_ups
@@ -100,5 +102,7 @@ app.include_router(analytics.router)
 app.include_router(settings_router.router)
 app.include_router(security_router.router)
 app.include_router(follow_up_rules_router.router)
+app.include_router(cities_router.router)
+app.include_router(today_router.router)
 app.include_router(whatsapp_webhook.router)
 app.include_router(ws_router.router)

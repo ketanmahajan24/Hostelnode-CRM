@@ -22,6 +22,9 @@ status_history_col = db["status_history"]
 calls_col = db["calls"]
 follow_up_rules_col = db["follow_up_rules"]
 tasks_col = db["tasks"]
+city_lookup_col = db["city_lookup"]
+city_lookup_col = db["city_lookup"]
+city_lookup_col = db["city_lookup"]
 
 
 async def init_indexes():
@@ -63,3 +66,9 @@ async def init_indexes():
     await tasks_col.create_index("due_at")
     await tasks_col.create_index("status")
     await tasks_col.create_index("wa_id")
+
+    await city_lookup_col.create_index("raw_variants")
+    await city_lookup_col.create_index("canonical_city")
+    await contacts_col.create_index("city")
+
+    await city_lookup_col.create_index("raw_variants")

@@ -4,9 +4,12 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime, timezone, timedelta
 
 from app.database import messages_col, contacts_col, conversations_col
+from app.services import analytics_service
+from app.utils.helpers import register_filters
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+register_filters(templates.env)
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -48,4 +51,21 @@ async def analytics_page(request: Request):
         "request": request, "today_sent": today_sent, "today_received": today_received,
         "total_unread": total_unread, "active_users": active_users,
         "days": days, "most_active": most_active, "page": "analytics",
+    })
+
+
+@router.get("/analytics/pipeline", response_class=HTMLResponse)
+async def pipeline_analytics_page(request: Request):
+    funnel = await analytics_service.get_overall_funnel()
+    by_source = await analytics_service.get_funnel_by_source()
+    avg_days = await analytics_service.get_avg_days_per_stage()
+    rep_activity = await analytics_service.get_rep_activity()
+    split = await analytics_service.get_automated_vs_manual_split()
+
+    total_leads = sum(f["count"] for f in funnel)
+
+    return templates.TemplateResponse("analytics/pipeline.html", {
+        "request": request, "funnel": funnel, "total_leads": total_leads,
+        "by_source": by_source, "avg_days": avg_days, "rep_activity": rep_activity,
+        "split": split, "page": "analytics",
     })

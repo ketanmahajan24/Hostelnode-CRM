@@ -84,6 +84,8 @@ async def update_contact(wa_id: str, updates: dict, triggered_by: str = "user") 
         # contact_service and follow_up_service, which both reference each other.
         from app.services.follow_up_service import schedule_next_follow_up
         await schedule_next_follow_up(wa_id, updates["lead_status"])
+    from app.services.scoring_service import recompute_and_store
+    await recompute_and_store(wa_id)
     return await contacts_col.find_one({"wa_id": wa_id})
 
 
@@ -164,6 +166,10 @@ async def get_activity_timeline(wa_id: str) -> List[dict]:
     return events
 
 
+async def list_cities() -> List[str]:
+    return await contacts_col.distinct("city")
+
+
 async def block_contact(wa_id: str, blocked: bool = True):
     await contacts_col.update_one({"wa_id": wa_id}, {"$set": {"is_blocked": blocked}})
 
@@ -197,14 +203,18 @@ async def auto_advance_on_reply(wa_id: str, reply_text: Optional[str], is_button
 
 async def create_lead_manual(name: str, phone: str, pg_name: str, location: str, email: str,
                               source: str = "manual") -> dict:
+    from app.services.city_service import normalize_city
+
     wa_id = normalize_phone(phone)
     existing = await contacts_col.find_one({"wa_id": wa_id})
     if existing:
         return {"created": False, "wa_id": wa_id, "reason": "duplicate phone"}
 
+    city, state = await normalize_city(location)
     contact = await get_or_create_contact(wa_id, name=name)
     await contacts_col.update_one({"wa_id": wa_id}, {"$set": {
         "pg_name": pg_name, "location": location, "email": email, "source": source,
+        "city": city, "state": state,
     }})
     return {"created": True, "wa_id": wa_id}
 
@@ -214,6 +224,8 @@ async def bulk_import_leads(rows: List[dict], source: str = "excel") -> dict:
     rows: list of dicts already mapped to {name, phone, pg_name, location, email}.
     Dedupes by phone (wa_id) — existing contacts are skipped, not overwritten.
     """
+    from app.services.city_service import normalize_city
+
     created, skipped = 0, 0
     for row in rows:
         phone = normalize_phone(row.get("phone", ""))
@@ -224,12 +236,15 @@ async def bulk_import_leads(rows: List[dict], source: str = "excel") -> dict:
         if existing:
             skipped += 1
             continue
+        city, state = await normalize_city(row.get("location"))
         await get_or_create_contact(phone, name=row.get("name") or phone)
         await contacts_col.update_one({"wa_id": phone}, {"$set": {
             "pg_name": row.get("pg_name"),
             "location": row.get("location"),
             "email": row.get("email"),
             "source": source,
+            "city": city,
+            "state": state,
         }})
         created += 1
     return {"created": created, "skipped": skipped, "total": len(rows)}
