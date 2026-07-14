@@ -54,6 +54,8 @@ async def today_page(request: Request):
         "lead_status": {"$nin": TERMINAL_STATUSES},
     }):
         last_activity = scoring_service._most_recent_activity(c)
+        if last_activity and last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=timezone.utc)
         if last_activity and last_activity < stale_cutoff:
             entries.setdefault(c["wa_id"], {"contact": c, "reason": "Stale — no follow-up rule set for this status"})
 
