@@ -11,64 +11,64 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-# async def _signup_is_open() -> bool:
-#     """Signup is only available until the first (admin) account exists."""
-#     existing = await users_col.count_documents({})
-#     return existing == 0
+async def _signup_is_open() -> bool:
+    """Signup is only available until the first (admin) account exists."""
+    existing = await users_col.count_documents({})
+    return existing == 0
 
 
-# @router.get("/signup", response_class=HTMLResponse)
-# async def signup_page(request: Request):
-#     if not await _signup_is_open():
-#         return RedirectResponse(url="/login", status_code=303)
-#     return templates.TemplateResponse("auth/signup.html", {"request": request})
+@router.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request):
+    if not await _signup_is_open():
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse("auth/signup.html", {"request": request})
 
 
-# @router.post("/signup", response_class=HTMLResponse)
-# async def signup_submit(
-#     request: Request,
-#     name: str = Form(...),
-#     email: str = Form(...),
-#     password: str = Form(...),
-#     confirm_password: str = Form(...),
-# ):
-#     if not await _signup_is_open():
-#         return RedirectResponse(url="/login", status_code=303)
-#
-#     email = email.strip().lower()
-#     ctx = {"request": request, "name": name, "email": email}
-#
-#     if len(password) < 8:
-#         ctx["error"] = "Password must be at least 8 characters."
-#         return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
-#
-#     if password != confirm_password:
-#         ctx["error"] = "Passwords do not match."
-#         return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
-#
-#     existing = await users_col.find_one({"email": email})
-#     if existing:
-#         ctx["error"] = "An account with that email already exists."
-#         return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
-#
-#     user_doc = {
-#         "name": name.strip(),
-#         "email": email,
-#         "password_hash": hash_password(password),
-#         "role": "admin",
-#         "is_active": True,
-#         "created_at": datetime.now(timezone.utc),
-#         "last_login_at": None,
-#     }
-#     result = await users_col.insert_one(user_doc)
-#
-#     request.session["user_id"] = str(result.inserted_id)
-#     request.session["user_name"] = user_doc["name"]
-#     request.session["user_email"] = user_doc["email"]
-#
-#     await log_auth_event(request, "signup", user_id=str(result.inserted_id), email=user_doc["email"])
-#
-#     return RedirectResponse(url="/", status_code=303)
+@router.post("/signup", response_class=HTMLResponse)
+async def signup_submit(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+    if not await _signup_is_open():
+        return RedirectResponse(url="/login", status_code=303)
+
+    email = email.strip().lower()
+    ctx = {"request": request, "name": name, "email": email}
+
+    if len(password) < 8:
+        ctx["error"] = "Password must be at least 8 characters."
+        return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
+
+    if password != confirm_password:
+        ctx["error"] = "Passwords do not match."
+        return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
+
+    existing = await users_col.find_one({"email": email})
+    if existing:
+        ctx["error"] = "An account with that email already exists."
+        return templates.TemplateResponse("auth/signup.html", ctx, status_code=400)
+
+    user_doc = {
+        "name": name.strip(),
+        "email": email,
+        "password_hash": hash_password(password),
+        "role": "admin",
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+        "last_login_at": None,
+    }
+    result = await users_col.insert_one(user_doc)
+
+    request.session["user_id"] = str(result.inserted_id)
+    request.session["user_name"] = user_doc["name"]
+    request.session["user_email"] = user_doc["email"]
+
+    await log_auth_event(request, "signup", user_id=str(result.inserted_id), email=user_doc["email"])
+
+    return RedirectResponse(url="/", status_code=303)
 
 
 @router.get("/login", response_class=HTMLResponse)
