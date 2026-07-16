@@ -6,7 +6,7 @@ async def main():
         {"name": "hostelnode_owner_invite_full_v1"},
         {"$set": {
             "header_type": "IMAGE",
-            "header_image_url": "https://hostelnode.com/static/images/hostelnode_owner_invite_full_v1.png"
+            "header_image_url": "https://crm.hostelnode.com/static/images/hostelnode_owner_invite_full_v1.png"
         }},
         upsert=True
     )
