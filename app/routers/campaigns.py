@@ -82,6 +82,12 @@ async def send_broadcast(request: Request, name: str = Form(...), template_name:
 
     # Fetch the template once up front, not per-recipient
     template_doc = await templates_col.find_one({"name": template_name})
+
+    # Use the template's actual approved language, not the form value —
+    # avoids (#132001) "Template name does not exist in the translation"
+    # when the form sends en_US but the template was approved as "en".
+    actual_language = template_doc.get("language", language) if template_doc else language
+
     try:
         components = _build_template_components(template_doc)
     except ValueError as e:
@@ -104,7 +110,7 @@ async def send_broadcast(request: Request, name: str = Form(...), template_name:
     for wa_id in wa_ids:
         try:
             wa_result = await whatsapp_service.send_template_message(
-                wa_id, template_name, language, components=components
+                wa_id, template_name, actual_language, components=components
             )
             wamid = wa_result.get("messages", [{}])[0].get("id")
             now = datetime.now(timezone.utc)

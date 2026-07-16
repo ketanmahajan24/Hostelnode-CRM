@@ -1,17 +1,14 @@
 import asyncio
-from app.database import templates_col
+from app.database import campaigns_col
 
 async def main():
-    result = await templates_col.update_one(
-        {"name": "hostelnode_owner_invite_full_v1"},
-        {"$set": {
-            "header_type": "IMAGE",
-            "header_image_url": "https://crm.hostelnode.com/static/images/hostelnode_owner_invite_full_v1.png"
-        }},
-        upsert=True
+    doc = await campaigns_col.find_one(
+        {"template_name": "hostelnode_owner_invite_full_v1"},
+        sort=[("created_at", -1)]
     )
-    print("Matched:", result.matched_count)
-    print("Modified:", result.modified_count)
-    print("Upserted ID:", result.upserted_id)
+    print("Status:", doc.get("status"))
+    print("Sent:", doc.get("sent_count"))
+    print("Failed:", doc.get("failed_count"))
+    print("Failed Details:", doc.get("failed_details"))
 
 asyncio.run(main())
