@@ -104,30 +104,49 @@ async def map_template_to_status(request: Request, template_id: str, lead_status
 async def upload_header_media(request: Request, template_id: str, file: UploadFile = File(...)):
     from bson import ObjectId
 
-    template_doc = await templates_col.find_one({"_id": ObjectId(template_id)})
-    header_type = (template_doc or {}).get("header_type", "")
+    error = None
+    try:
+        template_doc = await templates_col.find_one({"_id": ObjectId(template_id)})
+        if not template_doc:
+            error = "Template not found — try re-syncing from Meta first."
+        else:
+            header_type = template_doc.get("header_type", "")
 
-    content = await file.read()
-    error = validate_upload(header_type, file.filename, len(content))
+            if not file.filename or "." not in file.filename:
+                error = "That file has no recognizable extension (e.g. .jpg, .mp4, .pdf)."
+            else:
+                content = await file.read()
 
-    if not error:
-        os.makedirs(TEMPLATE_MEDIA_DIR, exist_ok=True)
-        ext = "." + file.filename.rsplit(".", 1)[-1].lower()
-        # Random filename — avoids collisions and avoids exposing your original
-        # filenames publicly.
-        stored_name = f"{template_id}_{uuid.uuid4().hex[:8]}{ext}"
-        stored_path = os.path.join(TEMPLATE_MEDIA_DIR, stored_name)
-        with open(stored_path, "wb") as f:
-            f.write(content)
+                if len(content) == 0:
+                    error = "The uploaded file is empty (0 bytes) — check the file and try again."
+                else:
+                    error = validate_upload(header_type, file.filename, len(content))
 
-        # Absolute public URL — Meta's servers fetch this directly, a relative
-        # path is not enough. settings.public_base_url must be YOUR real
-        # public domain/IP (set it once in .env).
-        public_url = f"{settings.public_base_url.rstrip('/')}/static/template_media/{stored_name}"
-        await templates_col.update_one(
-            {"_id": ObjectId(template_id)},
-            {"$set": {"header_image_url": public_url, "header_media_id": None}},
+                if not error:
+                    os.makedirs(TEMPLATE_MEDIA_DIR, exist_ok=True)
+                    ext = "." + file.filename.rsplit(".", 1)[-1].lower()
+                    stored_name = f"{template_id}_{uuid.uuid4().hex[:8]}{ext}"
+                    stored_path = os.path.join(TEMPLATE_MEDIA_DIR, stored_name)
+
+                    with open(stored_path, "wb") as f:
+                        f.write(content)
+
+                    public_url = f"{settings.public_base_url.rstrip('/')}/static/template_media/{stored_name}"
+                    await templates_col.update_one(
+                        {"_id": ObjectId(template_id)},
+                        {"$set": {"header_image_url": public_url, "header_media_id": None}},
+                    )
+    except PermissionError:
+        error = (
+            f"Permission denied writing to '{TEMPLATE_MEDIA_DIR}' — the app process "
+            f"doesn't have write access to that folder. Run: chmod -R u+w static/ "
+            f"on your server (or check which user owns that directory)."
         )
+    except OSError as e:
+        error = f"Disk/filesystem error while saving the file: {e}"
+    except Exception as e:
+        # Catch-all so a bug here NEVER again shows as a silent no-op in the UI.
+        error = f"Unexpected upload error: {e}"
 
     docs = [d async for d in templates_col.find().sort("name", 1)]
     for d in docs:
