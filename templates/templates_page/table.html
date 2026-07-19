@@ -51,6 +51,11 @@
                    class="text-xs w-40 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-accent file:text-white file:text-xs">
             <button type="submit" class="px-2 py-1.5 rounded-lg text-xs bg-accent hover:bg-accent2 transition-colors shrink-0">Upload</button>
           </form>
+          <p class="text-[10px] text-gray-600">
+            {% if t.header_type == 'IMAGE' %}JPG/PNG only, max 5MB — phone photos (esp. iPhone HEIC) often need re-saving as JPG first
+            {% elif t.header_type == 'VIDEO' %}MP4/3GP only, max 16MB
+            {% else %}PDF only, max 100MB{% endif %}
+          </p>
           {% if t.header_image_url %}
           <a href="{{ t.header_image_url }}" target="_blank" class="text-[10px] text-emerald-400 hover:underline block truncate max-w-[180px]">
             ✓ {{ t.header_image_url }}
