@@ -1,0 +1,17 @@
+[33mcommit 21b22e2052d6cad7d89fb8e3a363a3e5a581e4b0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: ketanmahajan24 <ketanmahajan2003@gmail.com>
+Date:   Sun Jul 19 17:59:54 2026 +0530
+
+    template media will upload by crm - fixed
+
+ static/template_media/intro_hostelnode_khushi.mp4 | Bin [31m117200429[m -> [32m0[m bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+[33mcommit 9fb4beb7c1e5dee3b458713968a141dae9a24e69[m
+Author: ketanmahajan24 <ketanmahajan2003@gmail.com>
+Date:   Sun Jul 19 17:26:30 2026 +0530
+
+    template media will upload by crm - fixed
+
+ static/template_media/intro_hostelnode_khushi.mp4 | Bin [31m0[m -> [32m117200429[m bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
