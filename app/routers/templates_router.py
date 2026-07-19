@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import os
+import uuid
 
 from app.database import templates_col
 from app.services import whatsapp_service
 from app.services.whatsapp_service import WhatsAppAPIError
-from app.services.template_media_service import needs_header_media
+from app.services.template_media_service import needs_header_media, validate_upload
 from app.models.contact import LEAD_STATUSES
+from app.config import settings
+
+TEMPLATE_MEDIA_DIR = "static/template_media"
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -92,6 +97,45 @@ async def map_template_to_status(request: Request, template_id: str, lead_status
     _flag_missing_media(docs)
     return templates.TemplateResponse("templates_page/table.html", {
         "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES,
+    })
+
+
+@router.post("/templates/{template_id}/header-media/upload", response_class=HTMLResponse)
+async def upload_header_media(request: Request, template_id: str, file: UploadFile = File(...)):
+    from bson import ObjectId
+
+    template_doc = await templates_col.find_one({"_id": ObjectId(template_id)})
+    header_type = (template_doc or {}).get("header_type", "")
+
+    content = await file.read()
+    error = validate_upload(header_type, file.filename, len(content))
+
+    if not error:
+        os.makedirs(TEMPLATE_MEDIA_DIR, exist_ok=True)
+        ext = "." + file.filename.rsplit(".", 1)[-1].lower()
+        # Random filename — avoids collisions and avoids exposing your original
+        # filenames publicly.
+        stored_name = f"{template_id}_{uuid.uuid4().hex[:8]}{ext}"
+        stored_path = os.path.join(TEMPLATE_MEDIA_DIR, stored_name)
+        with open(stored_path, "wb") as f:
+            f.write(content)
+
+        # Absolute public URL — Meta's servers fetch this directly, a relative
+        # path is not enough. settings.public_base_url must be YOUR real
+        # public domain/IP (set it once in .env).
+        public_url = f"{settings.public_base_url.rstrip('/')}/static/template_media/{stored_name}"
+        await templates_col.update_one(
+            {"_id": ObjectId(template_id)},
+            {"$set": {"header_image_url": public_url, "header_media_id": None}},
+        )
+
+    docs = [d async for d in templates_col.find().sort("name", 1)]
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    _flag_missing_media(docs)
+    return templates.TemplateResponse("templates_page/table.html", {
+        "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES,
+        "upload_error": error,
     })
 
 

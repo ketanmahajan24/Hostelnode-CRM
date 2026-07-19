@@ -1,11 +1,14 @@
 {% if error %}
 <div class="p-4 bg-red-500/10 text-red-400 text-sm">Sync failed: {{ error }}</div>
 {% endif %}
+{% if upload_error %}
+<div class="p-4 bg-red-500/10 text-red-400 text-sm">Upload failed: {{ upload_error }}</div>
+{% endif %}
 {% set missing = wa_templates | selectattr("needs_header_image") | list %}
 {% if missing %}
 <div class="p-4 bg-amber-500/10 text-amber-400 text-sm">
-  ⚠ {{ missing|length }} template(s) have an image header but no header image URL set — every send of
-  those templates will fail until you set one below (this is the bug behind 100%-failed campaigns).
+  ⚠ {{ missing|length }} template(s) have a media header but no file uploaded yet — every send of
+  those templates will fail until you upload one below (this is the bug behind 100%-failed campaigns).
 </div>
 {% endif %}
 <table class="w-full text-sm">
@@ -40,11 +43,30 @@
       <td class="px-5 py-3">
         {% set has_media_header = t.header_type in ["IMAGE", "VIDEO", "DOCUMENT"] %}
         {% if has_media_header %}
-        <form hx-post="/templates/{{ t._id }}/header-image" hx-target="#templates-table" class="flex gap-1">
-          <input type="url" name="header_image_url" value="{{ t.header_image_url or '' }}" placeholder="https://... (public image URL)"
-                 class="bg-panel3/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none w-48">
-          <button type="submit" class="px-2 py-1.5 rounded-lg text-xs bg-accent hover:bg-accent2 transition-colors">Save</button>
-        </form>
+        <div class="space-y-1.5">
+          <form hx-post="/templates/{{ t._id }}/header-media/upload" hx-target="#templates-table"
+                hx-encoding="multipart/form-data" class="flex gap-1 items-center">
+            <input type="file" name="file" required
+                   accept="{% if t.header_type == 'IMAGE' %}.jpg,.jpeg,.png{% elif t.header_type == 'VIDEO' %}.mp4,.3gp{% else %}.pdf{% endif %}"
+                   class="text-xs w-40 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:bg-accent file:text-white file:text-xs">
+            <button type="submit" class="px-2 py-1.5 rounded-lg text-xs bg-accent hover:bg-accent2 transition-colors shrink-0">Upload</button>
+          </form>
+          {% if t.header_image_url %}
+          <a href="{{ t.header_image_url }}" target="_blank" class="text-[10px] text-emerald-400 hover:underline block truncate max-w-[180px]">
+            ✓ {{ t.header_image_url }}
+          </a>
+          {% else %}
+          <p class="text-[10px] text-amber-400">No file uploaded yet ({{ t.header_type|lower }} needed)</p>
+          {% endif %}
+          <details class="text-[10px] text-gray-500">
+            <summary class="cursor-pointer hover:text-gray-300">or paste a URL instead</summary>
+            <form hx-post="/templates/{{ t._id }}/header-image" hx-target="#templates-table" class="flex gap-1 mt-1">
+              <input type="url" name="header_image_url" value="{{ t.header_image_url or '' }}" placeholder="https://..."
+                     class="bg-panel3/50 rounded-lg px-2 py-1 text-[10px] focus:outline-none w-32">
+              <button type="submit" class="px-2 py-1 rounded-lg text-[10px] bg-panel3/60 hover:bg-panel3 transition-colors">Save</button>
+            </form>
+          </details>
+        </div>
         {% else %}
         <span class="text-xs text-gray-600">No media header</span>
         {% endif %}

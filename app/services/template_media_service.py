@@ -18,6 +18,30 @@ set — so it silently no-op'd. This module is the single shared version;
 """
 from typing import Optional, List
 
+# Meta's actual per-type limits for template header media.
+MEDIA_RULES = {
+    "IMAGE": {"extensions": {".jpg", ".jpeg", ".png"}, "max_bytes": 5 * 1024 * 1024},
+    "VIDEO": {"extensions": {".mp4", ".3gp"}, "max_bytes": 16 * 1024 * 1024},
+    "DOCUMENT": {"extensions": {".pdf"}, "max_bytes": 100 * 1024 * 1024},
+}
+
+
+def validate_upload(header_type: str, filename: str, size_bytes: int) -> Optional[str]:
+    """Returns an error message string if invalid, or None if OK."""
+    rules = MEDIA_RULES.get(header_type.upper())
+    if not rules:
+        return f"Unsupported header type '{header_type}'."
+
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in rules["extensions"]:
+        return f"{header_type} header needs one of {sorted(rules['extensions'])}, got '{ext}'."
+
+    if size_bytes > rules["max_bytes"]:
+        max_mb = rules["max_bytes"] / (1024 * 1024)
+        return f"File is too large for a {header_type} header — Meta's limit is {max_mb:.0f}MB."
+
+    return None
+
 
 def needs_header_media(template_doc: dict) -> bool:
     header_type = (template_doc.get("header_type") or "").upper()

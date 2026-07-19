@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     session_max_age_seconds: int = 60 * 60 * 24 * 14  # 14 days
     # Display timezone for timestamps shown in the UI (storage stays UTC)
     display_timezone: str = "Asia/Kolkata"
+
+    # The publicly reachable base URL of THIS server (e.g. https://crm.hostelnode.com
+    # or https://your-vps-ip:8000 if no domain yet). Required so uploaded template
+    # media (images/PDFs/videos) can be turned into an absolute public link that
+    # Meta's servers can actually fetch — a relative path like /static/... is not
+    # enough, Meta needs the full https:// URL.
+    public_base_url: str = "http://localhost:8000"
+
     # Server
     host: str = "0.0.0.0"
     port: int = 8000
