@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from app.database import contacts_col, status_history_col, calls_col, follow_up_rules_col
 
@@ -105,7 +105,8 @@ async def remove_tag(wa_id: str, tag: str):
 
 
 async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None,
-                         status: Optional[str] = None, city: Optional[str] = None) -> List[dict]:
+                         status: Optional[str] = None, city: Optional[str] = None,
+                         days: Optional[int] = None) -> List[dict]:
     query: dict = {}
     if search:
         query["$or"] = [
@@ -119,7 +120,10 @@ async def list_contacts(search: Optional[str] = None, tag: Optional[str] = None,
         query["lead_status"] = status
     if city:
         query["city"] = city
-    cursor = contacts_col.find(query).sort("name", 1)
+    if days:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        query["created_at"] = {"$gte": cutoff}
+    cursor = contacts_col.find(query).sort("created_at", -1)
     docs = [d async for d in cursor]
     for d in docs:
         d["_id"] = str(d["_id"])

@@ -21,9 +21,6 @@
     <option value="{{ t.name }}">{{ t.name }}</option>
     {% endfor %}
   </select>
-  <select name="language" class="bg-panel3/50 rounded-lg px-3 py-2 text-xs focus:outline-none">
-    <option value="en_US">en_US</option>
-  </select>
   <button type="submit" {% if not wa_templates %}disabled{% endif %}
           class="px-3 py-2 rounded-lg text-xs font-medium bg-accent hover:bg-accent2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
     Send to selected

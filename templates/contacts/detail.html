@@ -18,7 +18,15 @@
         {% if contact.pg_name %}<p class="text-sm text-gray-400 mt-1">{{ contact.pg_name }}{% if contact.location %} · {{ contact.location }}{% endif %}</p>{% endif %}
         {% if contact.email %}<p class="text-xs text-gray-500">{{ contact.email }}</p>{% endif %}
       </div>
-      <a href="/conversations/{{ contact.wa_id }}" class="text-accent text-xs hover:underline whitespace-nowrap">Open chat →</a>
+      <div class="flex flex-col items-end gap-2 shrink-0">
+        <a href="/conversations/{{ contact.wa_id }}" class="text-accent text-xs hover:underline whitespace-nowrap">Open chat →</a>
+        <form method="post" action="/contacts/{{ contact.wa_id }}/delete"
+              onsubmit="return confirm('Permanently delete {{ contact.name }} and all their messages, notes, and history? This cannot be undone.');">
+          <button type="submit" class="text-xs text-red-400 hover:text-red-300 hover:underline whitespace-nowrap">
+            Delete contact
+          </button>
+        </form>
+      </div>
     </div>
 
     <!-- Editable fields -->

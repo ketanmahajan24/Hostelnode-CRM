@@ -57,6 +57,19 @@
   </div>
   {% endif %}
 
+  <div class="flex items-center gap-2 flex-wrap">
+    <span class="text-xs text-gray-500">Imported:</span>
+    {% for label, val in [
+      ("All time", ""), ("Last 24h", 1), ("Last 2 days", 2), ("Last 7 days", 7),
+      ("Last 15 days", 15), ("Last 30 days", 30), ("Last 60 days", 60), ("Last 90 days", 90),
+    ] %}
+    <button hx-get="/contacts/table" hx-target="#contacts-table" hx-vals='{"days": "{{ val }}"}' hx-include="[name='search'],[name='tag'],[name='status'],[name='city']"
+            class="px-3 py-1.5 rounded-full text-xs font-medium {% if active_days == val %}bg-accent text-white{% elif not active_days and val == '' %}bg-accent text-white{% else %}bg-panel3/60 text-gray-400{% endif %}">
+      {{ label }}
+    </button>
+    {% endfor %}
+  </div>
+
   <div id="contacts-table" class="glass rounded-2xl border border-panel3/60 overflow-hidden">
     {% include "contacts/table.html" %}
   </div>

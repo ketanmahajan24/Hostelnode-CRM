@@ -204,15 +204,14 @@ SEND_PACE_SECONDS = 0.4   # basic pacing between sends — see Phase 2 notes
 
 
 @router.post("/contacts/bulk-send", response_class=HTMLResponse)
-async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
-                              template_name: str = Form(...), language: str = Form("en_US")):
+async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...), template_name: str = Form(...)):
     triggered_by = _current_user_id(request)
     sent, failed, unmapped = 0, 0, 0
     fail_reasons = set()
     auto_mode = template_name == "__auto__"
 
     for wa_id in wa_ids:
-        this_template_name, this_language = template_name, language
+        this_template_name, this_language = template_name, None
         lead_status = None
         template_doc = None
 
@@ -226,7 +225,11 @@ async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
             this_template_name, this_language = mapped["name"], mapped["language"]
             template_doc = mapped
         else:
-            template_doc = await templates_col.find_one({"name": this_template_name, "language": this_language})
+            # Auto-detect language from the template itself — don't ask the
+            # user to pick it. Picking the wrong one here used to cause the
+            # lookup below to silently fail to find the template at all.
+            template_doc = await templates_col.find_one({"name": this_template_name})
+            this_language = template_doc["language"] if template_doc else "en_US"
 
         # BUG FIX: templates with a media header need that media supplied on
         # every send, or Meta rejects the whole message (this was the cause of
