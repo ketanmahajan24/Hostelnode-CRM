@@ -7,6 +7,7 @@ from typing import Optional, List
 from app.database import campaigns_col, templates_col, contacts_col
 from app.services import whatsapp_service, message_service
 from app.services.whatsapp_service import WhatsAppAPIError
+from app.services.template_media_service import build_template_components
 from app.utils.helpers import register_filters
 
 
@@ -26,41 +27,6 @@ async def campaigns_page(request: Request):
     return templates.TemplateResponse("campaigns/index.html", {
         "request": request, "campaigns": campaigns, "wa_templates": wa_templates, "page": "campaigns",
     })
-
-
-def _build_template_components(template_doc: Optional[dict]) -> Optional[List[dict]]:
-    """
-    Builds the `components` array required when a template's header
-    is an IMAGE (or VIDEO/DOCUMENT). Returns None if the template has
-    no media header (plain text templates don't need this).
-    """
-    if not template_doc:
-        return None
-
-    header_type = (template_doc.get("header_type") or "").upper()
-    if header_type not in ("IMAGE", "VIDEO", "DOCUMENT"):
-        return None
-
-    media_id = template_doc.get("header_media_id")
-    media_url = template_doc.get("header_image_url") or template_doc.get("header_media_url")
-
-    media_key = header_type.lower()  # "image" | "video" | "document"
-    media_obj = {"id": media_id} if media_id else {"link": media_url}
-
-    if not media_id and not media_url:
-        raise ValueError(
-            f"Template '{template_doc.get('name')}' has a {header_type} header "
-            f"but no header_media_id/header_image_url is set on the template doc."
-        )
-
-    return [
-        {
-            "type": "header",
-            "parameters": [
-                {"type": media_key, media_key: media_obj}
-            ],
-        }
-    ]
 
 
 @router.post("/campaigns/broadcast", response_class=HTMLResponse)
@@ -89,7 +55,7 @@ async def send_broadcast(request: Request, name: str = Form(...), template_name:
     actual_language = template_doc.get("language", language) if template_doc else language
 
     try:
-        components = _build_template_components(template_doc)
+        components = build_template_components(template_doc)
     except ValueError as e:
         await campaigns_col.update_one(
             {"_id": result.inserted_id},

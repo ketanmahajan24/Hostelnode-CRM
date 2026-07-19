@@ -10,6 +10,7 @@ from app.services import contact_service, message_service
 from app.services.whatsapp_service import send_template_message, WhatsAppAPIError
 from app.services.import_service import parse_leads_file
 from app.models.contact import LEAD_STATUSES
+from app.services.template_media_service import build_template_components
 from app.utils.helpers import register_filters
 
 router = APIRouter()
@@ -207,11 +208,13 @@ async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
                               template_name: str = Form(...), language: str = Form("en_US")):
     triggered_by = _current_user_id(request)
     sent, failed, unmapped = 0, 0, 0
+    fail_reasons = set()
     auto_mode = template_name == "__auto__"
 
     for wa_id in wa_ids:
         this_template_name, this_language = template_name, language
         lead_status = None
+        template_doc = None
 
         if auto_mode:
             contact = await contact_service.get_lead_detail(wa_id)
@@ -221,9 +224,22 @@ async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
                 unmapped += 1
                 continue
             this_template_name, this_language = mapped["name"], mapped["language"]
+            template_doc = mapped
+        else:
+            template_doc = await templates_col.find_one({"name": this_template_name, "language": this_language})
+
+        # BUG FIX: templates with a media header need that media supplied on
+        # every send, or Meta rejects the whole message (this was the cause of
+        # 100%-failed campaigns — see conversation history).
+        try:
+            header_components = build_template_components(template_doc) if template_doc else None
+        except ValueError as e:
+            failed += 1
+            fail_reasons.add(str(e))
+            continue
 
         try:
-            wa_result = await send_template_message(wa_id, this_template_name, this_language)
+            wa_result = await send_template_message(wa_id, this_template_name, this_language, components=header_components)
             wamid = wa_result.get("messages", [{}])[0].get("id")
             now = datetime.now(timezone.utc)
             await message_service.save_message({
@@ -242,8 +258,10 @@ async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
                 updates["lead_status"] = "Message Sent"
             await contact_service.update_contact(wa_id, updates, triggered_by=triggered_by)
             sent += 1
-        except WhatsAppAPIError:
+        except WhatsAppAPIError as e:
             failed += 1
+            print(f"[bulk-send] failed for {wa_id} ({this_template_name}): {e}")
+            fail_reasons.add(str(e))
         # Basic pacing so a big batch doesn't hit Meta's per-second/tier rate limits.
         await asyncio.sleep(SEND_PACE_SECONDS)
 
@@ -251,5 +269,8 @@ async def bulk_send_template(request: Request, wa_ids: List[str] = Form(...),
     wa_templates = [t async for t in templates_col.find().sort("name", 1)]
     return templates.TemplateResponse("contacts/table.html", {
         "request": request, "contacts": contacts, "wa_templates": wa_templates,
-        "send_result": {"sent": sent, "failed": failed, "unmapped": unmapped, "total": len(wa_ids)},
+        "send_result": {
+            "sent": sent, "failed": failed, "unmapped": unmapped, "total": len(wa_ids),
+            "fail_reasons": list(fail_reasons),
+        },
     })

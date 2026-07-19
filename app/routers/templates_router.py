@@ -5,10 +5,19 @@ from fastapi.templating import Jinja2Templates
 from app.database import templates_col
 from app.services import whatsapp_service
 from app.services.whatsapp_service import WhatsAppAPIError
+from app.services.template_media_service import needs_header_media
 from app.models.contact import LEAD_STATUSES
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+
+def _flag_missing_media(docs: list):
+    """Marks templates that need a header image/video/doc but don't have one set yet."""
+    for d in docs:
+        d["needs_header_image"] = needs_header_media(d) and not (
+            d.get("header_media_id") or d.get("header_image_url") or d.get("header_media_url")
+        )
 
 
 @router.get("/templates", response_class=HTMLResponse)
@@ -16,6 +25,7 @@ async def templates_page(request: Request):
     docs = [d async for d in templates_col.find().sort("name", 1)]
     for d in docs:
         d["_id"] = str(d["_id"])
+    _flag_missing_media(docs)
     return templates.TemplateResponse("templates_page/index.html", {
         "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES, "page": "templates",
     })
@@ -27,7 +37,14 @@ async def sync_templates(request: Request):
     try:
         remote = await whatsapp_service.fetch_approved_templates()
         for t in remote:
-            body_component = next((c for c in t.get("components", []) if c.get("type") == "BODY"), {})
+            components = t.get("components", [])
+            body_component = next((c for c in components if c.get("type") == "BODY"), {})
+            header_component = next((c for c in components if c.get("type") == "HEADER"), {})
+            # BUG FIX: this header_type is what build_template_components() in
+            # template_media_service.py depends on. Previously nothing set
+            # this field, so the media-header fix silently never fired.
+            header_type = header_component.get("format", "") if header_component else ""
+
             await templates_col.update_one(
                 {"name": t["name"], "language": t["language"]},
                 {
@@ -36,12 +53,17 @@ async def sync_templates(request: Request):
                         "language": t["language"],
                         "category": t.get("category", ""),
                         "status": t.get("status", ""),
-                        "components": t.get("components", []),
+                        "components": components,
                         "body_text": body_component.get("text", ""),
+                        "header_type": header_type,   # "IMAGE" | "VIDEO" | "DOCUMENT" | "TEXT" | ""
                     },
-                    # Only set maps_to_lead_status if this is a brand-new template doc —
-                    # a re-sync must never wipe out a mapping you already configured.
-                    "$setOnInsert": {"maps_to_lead_status": None},
+                    # Only set these on brand-new template docs — a re-sync must
+                    # never wipe out settings you already configured.
+                    "$setOnInsert": {
+                        "maps_to_lead_status": None,
+                        "header_image_url": None,
+                        "header_media_id": None,
+                    },
                 },
                 upsert=True,
             )
@@ -51,6 +73,7 @@ async def sync_templates(request: Request):
     docs = [d async for d in templates_col.find().sort("name", 1)]
     for d in docs:
         d["_id"] = str(d["_id"])
+    _flag_missing_media(docs)
     return templates.TemplateResponse("templates_page/table.html", {
         "request": request, "wa_templates": docs, "error": error, "statuses": LEAD_STATUSES,
     })
@@ -66,6 +89,23 @@ async def map_template_to_status(request: Request, template_id: str, lead_status
     docs = [d async for d in templates_col.find().sort("name", 1)]
     for d in docs:
         d["_id"] = str(d["_id"])
+    _flag_missing_media(docs)
+    return templates.TemplateResponse("templates_page/table.html", {
+        "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES,
+    })
+
+
+@router.post("/templates/{template_id}/header-image", response_class=HTMLResponse)
+async def set_header_image(request: Request, template_id: str, header_image_url: str = Form(...)):
+    from bson import ObjectId
+    await templates_col.update_one(
+        {"_id": ObjectId(template_id)},
+        {"$set": {"header_image_url": header_image_url.strip()}},
+    )
+    docs = [d async for d in templates_col.find().sort("name", 1)]
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    _flag_missing_media(docs)
     return templates.TemplateResponse("templates_page/table.html", {
         "request": request, "wa_templates": docs, "statuses": LEAD_STATUSES,
     })

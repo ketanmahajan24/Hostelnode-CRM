@@ -156,9 +156,13 @@ async def send_template_to_chat(request: Request, wa_id: str, template_name: str
         "text": f"Template: {template_name}",
     }
     try:
-        result = await whatsapp_service.send_template_message(wa_id, template_name, language)
+        from app.database import templates_col
+        from app.services.template_media_service import build_template_components
+        template_doc = await templates_col.find_one({"name": template_name})
+        components = build_template_components(template_doc) if template_doc else None
+        result = await whatsapp_service.send_template_message(wa_id, template_name, language, components=components)
         doc["wamid"] = result.get("messages", [{}])[0].get("id")
-    except WhatsAppAPIError as e:
+    except (WhatsAppAPIError, ValueError) as e:
         doc["status"] = "failed"
         doc["error"] = str(e)
 

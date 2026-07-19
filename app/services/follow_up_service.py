@@ -14,9 +14,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from bson import ObjectId
 
-from app.database import contacts_col, follow_up_rules_col, tasks_col
+from app.database import contacts_col, follow_up_rules_col, tasks_col, templates_col
 from app.services import contact_service
 from app.services.whatsapp_service import send_template_message, WhatsAppAPIError
+from app.services.template_media_service import build_template_components
 from app.services import message_service
 
 TERMINAL_STATUSES = {"Onboarded", "Lost"}
@@ -107,7 +108,11 @@ async def _execute_rule_action(contact: dict, rule: dict) -> str:
         if not template_name:
             return "skipped (rule has no template configured)"
         try:
-            wa_result = await send_template_message(wa_id, template_name, rule.get("language", "en_US"))
+            template_doc = await templates_col.find_one({"name": template_name})
+            header_components = build_template_components(template_doc) if template_doc else None
+            wa_result = await send_template_message(
+                wa_id, template_name, rule.get("language", "en_US"), components=header_components
+            )
             wamid = wa_result.get("messages", [{}])[0].get("id")
             now = datetime.now(timezone.utc)
             await message_service.save_message({
@@ -118,7 +123,7 @@ async def _execute_rule_action(contact: dict, rule: dict) -> str:
             await message_service.upsert_conversation_on_outbound(wa_id, f"[auto follow-up: {template_name}]", "template", now)
             await contacts_col.update_one({"wa_id": wa_id}, {"$set": {"last_message_sent_at": now}})
             return f"sent template '{template_name}'"
-        except WhatsAppAPIError as e:
+        except (WhatsAppAPIError, ValueError) as e:
             return f"failed to send: {e}"
 
     if action == "notify_rep":

@@ -6,6 +6,11 @@
   <span class="text-gray-400">{{ send_result.failed }} failed</span>{% if send_result.unmapped %},
   <span class="text-amber-400">{{ send_result.unmapped }} skipped (no template mapped to that status)</span>{% endif %}
   ({{ send_result.total }} selected)
+  {% if send_result.fail_reasons %}
+  <div class="mt-1 text-xs text-red-400">
+    {% for reason in send_result.fail_reasons %}<p>⚠ {{ reason }}</p>{% endfor %}
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 

@@ -103,7 +103,7 @@
 
           <div class="flex items-center justify-end gap-1 mt-1">
             {% if m.status == 'failed' %}
-            <span class="text-xs text-red-400" title="{{ m.error }}">Failed</span>
+            <span class="text-xs text-red-400">Failed{% if m.error %}: {{ m.error }}{% endif %}</span>
             {% endif %}
             <span class="text-[10px] text-gray-400">{{ m.timestamp | fmt_time }}</span>
             {% if m.direction == 'outbound' and m.status != 'failed' %}

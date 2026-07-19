@@ -1,6 +1,13 @@
 {% if error %}
 <div class="p-4 bg-red-500/10 text-red-400 text-sm">Sync failed: {{ error }}</div>
 {% endif %}
+{% set missing = wa_templates | selectattr("needs_header_image") | list %}
+{% if missing %}
+<div class="p-4 bg-amber-500/10 text-amber-400 text-sm">
+  ⚠ {{ missing|length }} template(s) have an image header but no header image URL set — every send of
+  those templates will fail until you set one below (this is the bug behind 100%-failed campaigns).
+</div>
+{% endif %}
 <table class="w-full text-sm">
   <thead class="bg-panel3/40 text-gray-400 text-xs uppercase tracking-wide">
     <tr>
@@ -8,13 +15,14 @@
       <th class="text-left px-5 py-3">Language</th>
       <th class="text-left px-5 py-3">Category</th>
       <th class="text-left px-5 py-3">Status</th>
+      <th class="text-left px-5 py-3">Header image</th>
       <th class="text-left px-5 py-3">Maps to lead status</th>
       <th class="text-left px-5 py-3">Preview</th>
     </tr>
   </thead>
   <tbody class="divide-y divide-panel3/40">
     {% for t in wa_templates %}
-    <tr class="hover:bg-panel3/20 transition-colors">
+    <tr class="hover:bg-panel3/20 transition-colors {% if t.needs_header_image %}bg-amber-500/5{% endif %}">
       <td class="px-5 py-3 font-medium">{{ t.name }}</td>
       <td class="px-5 py-3 text-gray-400">{{ t.language }}</td>
       <td class="px-5 py-3 text-gray-400">{{ t.category }}</td>
@@ -30,6 +38,18 @@
         {% endif %}
       </td>
       <td class="px-5 py-3">
+        {% set has_media_header = t.header_type in ["IMAGE", "VIDEO", "DOCUMENT"] %}
+        {% if has_media_header %}
+        <form hx-post="/templates/{{ t._id }}/header-image" hx-target="#templates-table" class="flex gap-1">
+          <input type="url" name="header_image_url" value="{{ t.header_image_url or '' }}" placeholder="https://... (public image URL)"
+                 class="bg-panel3/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none w-48">
+          <button type="submit" class="px-2 py-1.5 rounded-lg text-xs bg-accent hover:bg-accent2 transition-colors">Save</button>
+        </form>
+        {% else %}
+        <span class="text-xs text-gray-600">No media header</span>
+        {% endif %}
+      </td>
+      <td class="px-5 py-3">
         <form hx-post="/templates/{{ t._id }}/map" hx-target="#templates-table" hx-trigger="change">
           <select name="lead_status" class="bg-panel3/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
             <option value="">— Not mapped —</option>
@@ -42,7 +62,7 @@
       <td class="px-5 py-3 text-gray-400 max-w-sm truncate">{{ t.body_text }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-center py-10 text-gray-500">No templates synced yet. Click "Sync from Meta" above.</td></tr>
+    <tr><td colspan="7" class="text-center py-10 text-gray-500">No templates synced yet. Click "Sync from Meta" above.</td></tr>
     {% endfor %}
   </tbody>
 </table>
